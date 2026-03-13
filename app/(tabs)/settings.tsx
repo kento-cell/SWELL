@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { PremiumSheet } from '@/components/premium-sheet';
 import { usePlan } from '@/lib/plan-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getCurrentDataSource, setDataSource, getAvailableDataSources, type DataSource } from '@/lib/data-source-manager';
 
 const APP_VERSION = '1.0.0 (demo)';
 
@@ -45,6 +46,16 @@ function SectionHeader({ title }: { title: string }) {
 export default function SettingsScreen() {
   const { plan, setPlan } = usePlan();
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
+  const [dataSource, setDataSourceState] = useState<DataSource>('mock');
+
+  useEffect(() => {
+    getCurrentDataSource().then(setDataSourceState);
+  }, []);
+
+  const handleDataSourceChange = async (source: DataSource) => {
+    setDataSourceState(source);
+    await setDataSource(source);
+  };
 
   const isPremium = plan === 'premium';
 
@@ -84,6 +95,30 @@ export default function SettingsScreen() {
               </Pressable>
             )}
           </View>
+        </View>
+
+        {/* Data Source Section */}
+        <SectionHeader title="データソース" />
+        <View style={styles.section}>
+          {getAvailableDataSources().map((source) => (
+            <Pressable
+              key={source.id}
+              onPress={() => handleDataSourceChange(source.id)}
+              style={({ pressed }) => [
+                styles.dataSourceRow,
+                dataSource === source.id && styles.dataSourceRowActive,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <View style={styles.dataSourceContent}>
+                <Text style={[styles.dataSourceLabel, dataSource === source.id && styles.dataSourceLabelActive]}>
+                  {source.label}
+                </Text>
+                <Text style={styles.dataSourceDesc}>{source.description}</Text>
+              </View>
+              {dataSource === source.id && <Text style={styles.checkmark}>✓</Text>}
+            </Pressable>
+          ))}
         </View>
 
         {/* App Section */}
@@ -317,5 +352,37 @@ const styles = StyleSheet.create({
   legendItemDesc: {
     color: '#6B7280',
     fontSize: 12,
+  },
+  dataSourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1F2937',
+  },
+  dataSourceRowActive: {
+    backgroundColor: '#0F1419',
+  },
+  dataSourceContent: {
+    flex: 1,
+    gap: 4,
+  },
+  dataSourceLabel: {
+    color: '#E8EDF5',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dataSourceLabelActive: {
+    color: '#3B82F6',
+  },
+  dataSourceDesc: {
+    color: '#6B7280',
+    fontSize: 12,
+  },
+  checkmark: {
+    color: '#3B82F6',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

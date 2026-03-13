@@ -20,8 +20,9 @@ import { PageIndicator } from '@/components/page-indicator';
 import { LockOverlay } from '@/components/lock-overlay';
 import { Tutorial } from '@/components/tutorial';
 import { PremiumSheet } from '@/components/premium-sheet';
+import { WaveRankingWidget } from '@/components/wave-ranking-widget';
 import { usePlan } from '@/lib/plan-context';
-import { getTopicsByCategory } from '@/lib/mock-data';
+import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
 import { Category, FREE_CATEGORIES } from '@/lib/types';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
@@ -97,6 +98,20 @@ export default function HomeScreen() {
         <Text style={styles.logo}>SWELL</Text>
         <Text style={styles.tagline}>ニュースを読む前に、波を見る</Text>
       </View>
+
+      {/* Wave Ranking Widget */}
+      <WaveRankingWidget
+        topics={MOCK_TOPICS}
+        onTopicPress={(topic) => {
+          setActiveCategory(topic.category);
+          const categoryTopics = getTopicsByCategory(topic.category);
+          const idx = categoryTopics.findIndex((t) => t.id === topic.id);
+          if (idx >= 0) {
+            setCurrentIndex(idx);
+            flatListRef.current?.scrollToIndex({ index: idx, animated: true });
+          }
+        }}
+      />
 
       {/* Category Tabs */}
       <CategoryTab
