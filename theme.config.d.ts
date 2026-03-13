@@ -8,6 +8,11 @@ export const themeColors: {
   success: { light: string; dark: string };
   warning: { light: string; dark: string };
   error: { light: string; dark: string };
+  waveBlue: { light: string; dark: string };
+  waveGreen: { light: string; dark: string };
+  waveYellow: { light: string; dark: string };
+  waveRed: { light: string; dark: string };
+  premium: { light: string; dark: string };
 };
 
 declare const themeConfig: {
