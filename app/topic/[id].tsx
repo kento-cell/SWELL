@@ -1,10 +1,11 @@
 import React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { WaveDisplay } from '@/components/wave-display';
 import { WaveLegend } from '@/components/wave-legend';
 import { SourceBadge } from '@/components/source-badge';
+import { OpenSourceButton } from '@/components/open-source-button';
 import { MOCK_TOPICS } from '@/lib/mock-data';
 import { WAVE_LEVEL_LABEL, WAVE_SENTIMENT_LABEL } from '@/lib/types';
 
@@ -27,11 +28,7 @@ export default function TopicDetailScreen() {
     );
   }
 
-  const handleOpenSource = () => {
-    if (topic.sourceUrl) {
-      Linking.openURL(topic.sourceUrl);
-    }
-  };
+  // OpenSourceButton handles the URL opening
 
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
@@ -101,18 +98,7 @@ export default function TopicDetailScreen() {
         </View>
 
         {/* Source link */}
-        {topic.sourceUrl ? (
-          <Pressable
-            onPress={handleOpenSource}
-            style={({ pressed }) => [styles.sourceLink, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.sourceLinkText}>元記事を読む → {topic.source}</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.sourceInfo}>
-            <Text style={styles.sourceInfoText}>ソース: {topic.source}</Text>
-          </View>
-        )}
+        <OpenSourceButton url={topic.sourceUrl} label={`${topic.source}で読む`} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -228,29 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'monospace',
   },
-  sourceLink: {
-    borderWidth: 1,
-    borderColor: '#3B82F6',
-    borderRadius: 2,
-    padding: 12,
-    alignItems: 'center',
-  },
-  sourceLinkText: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontFamily: 'monospace',
-  },
-  sourceInfo: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#1F2937',
-    borderRadius: 2,
-  },
-  sourceInfoText: {
-    color: '#4B5563',
-    fontSize: 12,
-    fontFamily: 'monospace',
-  },
+
   notFound: {
     flex: 1,
     justifyContent: 'center',

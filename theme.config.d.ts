@@ -13,6 +13,8 @@ export const themeColors: {
   waveYellow: { light: string; dark: string };
   waveRed: { light: string; dark: string };
   premium: { light: string; dark: string };
+  famiBrown: { light: string; dark: string };
+  famiPurple: { light: string; dark: string };
 };
 
 declare const themeConfig: {

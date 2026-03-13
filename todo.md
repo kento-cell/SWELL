@@ -81,3 +81,24 @@
 - [x] モック / HackerNews / RSS の切り替え
 - [x] データソースマネージャー実装
 - [x] キャッシュ機能実装
+
+
+## ファミコン8bitピクセルアート化
+- [x] ファミコンカラーパレット定義（赤・緑・茶・黄・黒）
+- [x] theme.config.js更新
+- [x] WaveDisplay8bitコンポーネント実装（8bitドット化）
+- [x] FamicomLogoコンポーネント実装
+- [ ] UI全体のピクセルアート化（ボタン・カード・テキスト）
+- [ ] PixelArrowコンポーネント改善
+## ニュースソース元への遷移
+- [x] browser-utilsクライアント実装
+- [x] OpenSourceButtonコンポーネント実装
+- [x] トピック詳細画面に「元記事を読む」ボタン追加
+- [x] sourceUrlの検証・フォールバック処理
+
+## iPhoneホーム画面ウィジェット（App Clips）
+- [x] app/clips/widget.tsxを作成
+- [x] ウィジェット用の最小限UI実装
+- [x] APP_CLIPS_GUIDE.mdを作成
+- [x] ディープリンク設定ドキュメント作成
+- [x] ウィジェット表示データの最適化

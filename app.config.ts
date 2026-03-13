@@ -125,6 +125,11 @@ const config: ExpoConfig = {
     typedRoutes: true,
     reactCompiler: true,
   },
+  extra: {
+    appClips: {
+      enabled: true,
+    },
+  },
 };
 
 export default config;
