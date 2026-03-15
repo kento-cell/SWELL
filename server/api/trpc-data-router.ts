@@ -1,5 +1,5 @@
 import { publicProcedure, router } from '../_core/trpc';
-import { fetchNewsData, fetchSocialData, fetchMarketData, fetchAllCategoryData } from './data-router';
+import { fetchNewsData, fetchSocialData, fetchMarketData, fetchAllCategoryData, fetchJapaneseNewsData, fetchVideosData } from './data-router';
 import { z } from 'zod';
 
 /**
@@ -53,6 +53,51 @@ export const dataRouter = router({
           lastUpdated: Date.now(),
           source: 'Error',
         },
+      };
+    }
+  }),
+
+  /**
+   * Fetch Japanese news data
+   */
+  getJapaneseNews: publicProcedure.query(async () => {
+    try {
+      const data = await fetchJapaneseNewsData();
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      console.error('Error fetching Japanese news:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch Japanese news',
+        data: {
+          category: 'NEWS' as const,
+          items: [],
+          lastUpdated: Date.now(),
+          source: 'Error',
+        },
+      };
+    }
+  }),
+
+  /**
+   * Fetch trending videos (YouTube + TikTok)
+   */
+  getVideos: publicProcedure.query(async () => {
+    try {
+      const data = await fetchVideosData();
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch videos',
+        data: [],
       };
     }
   }),

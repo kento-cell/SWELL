@@ -2,6 +2,8 @@ import { fetchHackerNewsTopStories, calculateWaveLevel, calculateWaveSentiment }
 import { fetchAllSocialTrending, calculateSocialWaveSentiment } from './rss-social-client';
 import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client-v2';
 import { cacheService, CACHE_CONFIG } from './cache-service';
+import { fetchJapaneseNews } from './japanese-news-client';
+import { fetchTrendingVideos } from './video-client';
 
 export interface TopicData {
   id: string;
@@ -22,6 +24,19 @@ export interface CategoryData {
   items: TopicData[];
   lastUpdated: number;
   source: string;
+}
+
+export interface VideoData {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  url: string;
+  views: string;
+  likes: string;
+  source: 'youtube' | 'tiktok';
+  publishedAt: string;
+  duration?: string;
 }
 
 /**
@@ -224,4 +239,78 @@ export async function fetchAllCategoryData() {
     SOCIAL: socialData,
     MARKET: marketData,
   };
+}
+
+/**
+ * Fetch Japanese news data
+ */
+export async function fetchJapaneseNewsData(): Promise<CategoryData> {
+  const config = CACHE_CONFIG.NEWS;
+
+  // Check cache first
+  const cached = cacheService.get<CategoryData>('japanese_news');
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const topics = await fetchJapaneseNews();
+
+    const items: TopicData[] = topics.map((topic) => ({
+      id: topic.id,
+      title: topic.title,
+      url: topic.sourceUrl || '',
+      sourceUrl: topic.sourceUrl || '',
+      source: topic.source,
+      waveLevel: topic.waveLevel,
+      waveSentiment: topic.waveSentiment,
+      timestamp: new Date(topic.publishedAt).getTime(),
+      description: topic.summary,
+    }));
+
+    const result: CategoryData = {
+      category: 'NEWS',
+      items,
+      lastUpdated: Date.now(),
+      source: 'Japanese News (NHK, Asahi, Yahoo)',
+    };
+
+    // Cache the result
+    cacheService.set('japanese_news', result, config.ttl);
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching Japanese news:', error);
+    return {
+      category: 'NEWS',
+      items: [],
+      lastUpdated: Date.now(),
+      source: 'Japanese News (error)',
+    };
+  }
+}
+
+/**
+ * Fetch trending videos
+ */
+export async function fetchVideosData(): Promise<VideoData[]> {
+  const config = CACHE_CONFIG.SOCIAL;
+
+  // Check cache first
+  const cached = cacheService.get<VideoData[]>('trending_videos');
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const videos = await fetchTrendingVideos('JP');
+
+    // Cache the result
+    cacheService.set('trending_videos', videos, config.ttl);
+
+    return videos;
+  } catch (error) {
+    console.error('Error fetching trending videos:', error);
+    return [];
+  }
 }

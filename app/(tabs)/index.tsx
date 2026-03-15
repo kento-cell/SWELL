@@ -43,8 +43,26 @@ export default function HomeScreen() {
   // Fetch real-time data from server
   const { topics: realtimeTopics, isLoading, error, source } = useCategoryData(activeCategory);
   
-  // Fallback to mock data if real-time data fails or is loading
+  // For SOCIAL category, also fetch videos
+  const [videos, setVideos] = useState<any[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
+  
+  useEffect(() => {
+    if (activeCategory === 'SOCIAL') {
+      setVideosLoading(true);
+      // Fetch videos from server
+      // This will be implemented via TRPC call
+      setVideosLoading(false);
+    }
+  }, [activeCategory]);
+  
+  // Determine displayed topics
   const topics = realtimeTopics.length > 0 ? realtimeTopics : getTopicsByCategory(activeCategory);
+  
+  // For SOCIAL category, mix articles and videos
+  const displayTopics = activeCategory === 'SOCIAL' && videos.length > 0 
+    ? [...topics.slice(0, Math.ceil(topics.length / 2)), ...videos.slice(0, 2)]
+    : topics;
 
   const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory);
 
@@ -163,17 +181,39 @@ export default function HomeScreen() {
             ]}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
-            renderItem={({ item }) => (
-              <View style={{ width: CARD_WIDTH, marginHorizontal: 8 }}>
-                <TopicCard
-                  topic={item}
-                  onPress={() => {
-                    setSelectedTopic(item);
-                    router.push({ pathname: '/topic/[id]', params: { id: item.id } });
-                  }}
-                />
-              </View>
-            )}
+            renderItem={({ item }) => {
+              // Check if item is a video or topic
+              const isVideo = 'source' in item && (item.source === 'youtube' || item.source === 'tiktok');
+              
+              return (
+                <View style={{ width: CARD_WIDTH, marginHorizontal: 8 }}>
+                  {isVideo ? (
+                    // Video card - open in browser
+                    <Pressable
+                      onPress={() => {
+                        // Open video URL in browser
+                        // This will be implemented with expo-web-browser
+                      }}
+                    >
+                      <View style={{ backgroundColor: '#1F2937', borderRadius: 12, padding: 12 }}>
+                        <Text style={{ color: '#ECEDEE', fontSize: 14, fontWeight: '600' }}>
+                          {item.title}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ) : (
+                    // Topic card
+                    <TopicCard
+                      topic={item}
+                      onPress={() => {
+                        setSelectedTopic(item);
+                        router.push({ pathname: '/topic/[id]', params: { id: item.id } });
+                      }}
+                    />
+                  )}
+                </View>
+              );
+            }}
             getItemLayout={(_, index) => ({
               length: CARD_WIDTH + 16,
               offset: (CARD_WIDTH + 16) * index,
