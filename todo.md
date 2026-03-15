@@ -209,3 +209,4 @@
 
 ## バグ修正
 - [x] ホーム画面の矢印ボタンを押しても次のカードに移動しない（scrollToIndex→scrollToOffsetに変更）
+- [x] 矢印ボタン押下でカード移動しない（pagingEnabled削除、snapToInterval+startに統一、オフセット計算修正）

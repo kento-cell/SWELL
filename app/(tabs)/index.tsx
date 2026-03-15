@@ -98,9 +98,11 @@ export default function HomeScreen() {
   const dataSource = realtimeTopics.length > 0 ? source : 'モックデータ';
 
   const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
-  const ITEM_WIDTH = CARD_WIDTH + 16; // card width + marginHorizontal * 2
+  const ITEM_WIDTH = CARD_WIDTH + 16; // card + marginHorizontal*2
+  // With paddingHorizontal=SIDE_PAD on contentContainer, page 0 offset=0, page N offset=N*ITEM_WIDTH
+  const SIDE_PAD = (SCREEN_WIDTH - CARD_WIDTH) / 2 - 8;
 
-  // Scroll to a specific index using offset (more reliable than scrollToIndex)
+  // Scroll to a specific index
   const scrollToCard = (index: number) => {
     flatListRef.current?.scrollToOffset({
       offset: index * ITEM_WIDTH,
@@ -172,14 +174,13 @@ export default function HomeScreen() {
               data={topics}
               keyExtractor={(item) => item.id}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
-              snapToInterval={CARD_WIDTH + 16}
-              snapToAlignment="center"
+              snapToInterval={ITEM_WIDTH}
+              snapToAlignment="start"
               decelerationRate="fast"
               contentContainerStyle={[
                 styles.flatListContent,
-                // No paddingHorizontal — keeps offset calculation simple and predictable
+                { paddingHorizontal: SIDE_PAD > 0 ? SIDE_PAD : 0 },
               ]}
               onViewableItemsChanged={onViewableItemsChanged}
               viewabilityConfig={viewabilityConfig}
@@ -203,8 +204,8 @@ export default function HomeScreen() {
                 );
               }}
               getItemLayout={(_, index) => ({
-                length: CARD_WIDTH + 16,
-                offset: (CARD_WIDTH + 16) * index,
+                length: ITEM_WIDTH,
+                offset: ITEM_WIDTH * index,
                 index,
               })}
             />
