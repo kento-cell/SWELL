@@ -39,7 +39,7 @@ export async function fetchStockPriceFromYahoo(symbol: string): Promise<StockPri
         region: 'US',
         interval: '1d',
         range: '1d',
-        includeAdjustedClose: true,
+        includeAdjustedClose: 'true',
       },
     }) as any;
 

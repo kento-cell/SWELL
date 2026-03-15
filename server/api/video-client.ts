@@ -45,10 +45,10 @@ export async function fetchYouTubeTrendingVideos(region: string = 'JP'): Promise
           id: video.videoId || '',
           title: video.title || 'Untitled',
           description: video.descriptionSnippet || '',
-          thumbnail: video.thumbnail?.url || '',
+          thumbnail: video.videoId ? `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg` : '',
           url: `https://www.youtube.com/watch?v=${video.videoId}`,
-          views: video.viewCountText || '0',
-          likes: '0', // YouTube API doesn't provide likes in search results
+          views: video.viewCountText || '0 views',
+          likes: '0 likes', // YouTube API doesn't provide likes in search results
           source: 'youtube',
           publishedAt: new Date().toISOString(),
           duration: video.lengthText || '',

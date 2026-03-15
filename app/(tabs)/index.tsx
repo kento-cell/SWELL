@@ -27,6 +27,7 @@ import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
 import { Category, FREE_CATEGORIES } from '@/lib/types';
 import { useCategoryData } from '@/hooks/use-real-time-data';
 import { useTopicContext } from '@/lib/topic-context';
+import { useColors } from '@/hooks/use-colors';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -35,6 +36,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { plan, tutorialDone } = usePlan();
   const { setSelectedTopic } = useTopicContext();
+  const colors = useColors();
   const [activeCategory, setActiveCategory] = useState<Category>('NEWS');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
@@ -131,6 +133,8 @@ export default function HomeScreen() {
     }
   }, [realtimeTopics, source, error]);
 
+  const styles = createStyles(colors);
+  
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
@@ -268,14 +272,15 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// Create dynamic styles that use theme colors
+const createStyles = (colors: any) => StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
+    borderBottomColor: colors.border,
   },
   logo: {
     color: '#E8EDF5',

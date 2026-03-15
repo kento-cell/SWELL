@@ -21,6 +21,7 @@ import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-run
 import { PlanProvider } from "@/lib/plan-context";
 import { TopicProvider } from "@/lib/topic-context";
 import { LocalizationProvider } from "@/lib/localization-context";
+import { UserPreferencesProvider } from "@/lib/user-preferences-context";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -86,6 +87,7 @@ export default function RootLayout() {
       <PlanProvider>
       <TopicProvider>
       <LocalizationProvider>
+      <UserPreferencesProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -106,6 +108,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
+      </UserPreferencesProvider>
       </LocalizationProvider>
       </TopicProvider>
       </PlanProvider>

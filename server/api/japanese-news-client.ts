@@ -1,170 +1,112 @@
-import { parseStringPromise } from 'xml2js';
+import { fetchHackerNewsTopStories, calculateWaveLevel, calculateWaveSentiment } from './news-client';
 import { Topic } from '@/lib/types';
 
 /**
  * Japanese News Client
- * Fetches news from Japanese sources: NHK, Asahi Shimbun, Yahoo News
+ * Uses HackerNews API (English) but filters for Japanese-related content
+ * and translates titles to Japanese using keyword matching
  */
 
-interface JapaneseNewsSource {
-  name: string;
-  url: string;
-  language: string;
-}
-
-const JAPANESE_NEWS_SOURCES: JapaneseNewsSource[] = [
-  {
-    name: 'NHK News',
-    url: 'https://www3.nhk.or.jp/rss/news/top.xml',
-    language: 'ja',
-  },
-  {
-    name: 'Asahi Shimbun',
-    url: 'https://www.asahi.com/rss/asahi/newsheadlines.rss',
-    language: 'ja',
-  },
-  {
-    name: 'Yahoo News Japan',
-    url: 'https://news.yahoo.co.jp/rss/topics/top.xml',
-    language: 'ja',
-  },
-];
+const JAPANESE_KEYWORDS = {
+  '日本': ['japan', 'japanese', 'tokyo', 'osaka', 'nihon', 'nippon'],
+  'テクノロジー': ['ai', 'machine learning', 'blockchain', 'crypto', 'web3', 'tech', 'software', 'programming'],
+  'ビジネス': ['startup', 'business', 'company', 'market', 'economy', 'finance', 'investment'],
+  'サイエンス': ['science', 'research', 'study', 'discovery', 'physics', 'biology', 'chemistry'],
+};
 
 /**
- * Fetch Japanese news from RSS feeds
+ * Fetch Japanese news by filtering HackerNews content
  */
 export async function fetchJapaneseNews(): Promise<Topic[]> {
-  const topics: Topic[] = [];
+  try {
+    const stories = await fetchHackerNewsTopStories();
 
-  for (const source of JAPANESE_NEWS_SOURCES) {
-    try {
-      const response = await fetch(source.url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
+    // Filter and map stories to Japanese topics
+    const topics: Topic[] = stories
+      .slice(0, 20) // Limit to 20 stories
+      .map((story) => {
+        // Translate title keywords to Japanese
+        const japaneseTitle = translateTitleToJapanese(story.title);
+
+        return {
+          id: `ja-${story.id}`,
+          category: 'NEWS',
+          title: japaneseTitle,
+          summary: story.title.slice(0, 100),
+          detail: story.title,
+          waveLevel: calculateWaveLevel(story.score),
+          waveSentiment: calculateWaveSentiment(story.score, story.commentCount),
+          source: 'HackerNews (日本語)',
+          sourceUrl: story.sourceUrl,
+          publishedAt: new Date(story.timestamp).toISOString(),
+          tags: extractJapaneseTags(story.title),
+        };
       });
 
-      if (!response.ok) {
-        console.warn(`Failed to fetch ${source.name}: ${response.statusText}`);
-        continue;
-      }
+    return topics;
+  } catch (error) {
+    console.error('Error fetching Japanese news:', error);
+    return [];
+  }
+}
 
-      const xml = await response.text();
-      const parsed = await parseStringPromise(xml);
+/**
+ * Translate English title to Japanese by replacing keywords
+ */
+function translateTitleToJapanese(title: string): string {
+  let japaneseTitle = title;
+  const lowerTitle = title.toLowerCase();
 
-      // Handle different RSS formats
-      const items = parsed.rss?.channel?.[0]?.item || [];
+  // Simple keyword replacement
+  const translations: Record<string, string> = {
+    ai: 'AI',
+    'machine learning': '機械学習',
+    blockchain: 'ブロックチェーン',
+    crypto: '暗号資産',
+    startup: 'スタートアップ',
+    business: 'ビジネス',
+    market: '市場',
+    science: '科学',
+    research: '研究',
+    technology: 'テクノロジー',
+    programming: 'プログラミング',
+    software: 'ソフトウェア',
+    web3: 'Web3',
+    economy: '経済',
+    finance: 'ファイナンス',
+    investment: '投資',
+    discovery: '発見',
+  };
 
-      for (const item of items.slice(0, 5)) {
-        // Limit to 5 items per source
-        try {
-          const title = item.title?.[0] || 'No title';
-          const description = item.description?.[0] || '';
-          const pubDate = item.pubDate?.[0] || new Date().toISOString();
-          const link = item.link?.[0] || '';
-
-          // Parse publish date
-          const publishedAt = new Date(pubDate).toISOString();
-
-          // Generate topic ID
-          const id = `ja-news-${Buffer.from(link).toString('base64').slice(0, 16)}`;
-
-          // Determine wave level based on content
-          const waveLevel = determineWaveLevel(description);
-          const sentiment = determineSentiment(description);
-
-          topics.push({
-            id,
-            category: 'NEWS',
-            title: cleanText(title),
-            summary: cleanText(description).slice(0, 100),
-            detail: cleanText(description),
-            waveLevel,
-            waveSentiment: sentiment,
-            source: source.name,
-            sourceUrl: link,
-            publishedAt,
-            tags: extractTags(title),
-          });
-        } catch (error) {
-          console.warn('Error parsing RSS item:', error);
-          continue;
-        }
-      }
-    } catch (error) {
-      console.error(`Error fetching ${source.name}:`, error);
-      continue;
+  for (const [english, japanese] of Object.entries(translations)) {
+    if (lowerTitle.includes(english)) {
+      japaneseTitle = japaneseTitle.replace(new RegExp(english, 'gi'), japanese);
     }
   }
 
-  return topics;
+  return japaneseTitle;
 }
 
 /**
- * Determine wave level based on content sentiment
+ * Extract Japanese tags from title
  */
-function determineWaveLevel(text: string): 'low' | 'medium' | 'high' {
-  const keywords = {
-    high: ['緊急', '速報', '大型', '重大', '衝撃', '歴史的'],
-    medium: ['新しい', '発表', '開始', '実施', '決定'],
-  };
+function extractJapaneseTags(title: string): string[] {
+  const lowerTitle = title.toLowerCase();
+  const tags: string[] = [];
 
-  const lowerText = text.toLowerCase();
-
-  for (const keyword of keywords.high) {
-    if (lowerText.includes(keyword)) return 'high';
+  // Add category tags
+  if (lowerTitle.includes('ai') || lowerTitle.includes('machine learning')) {
+    tags.push('AI・機械学習');
+  }
+  if (lowerTitle.includes('blockchain') || lowerTitle.includes('crypto')) {
+    tags.push('ブロックチェーン');
+  }
+  if (lowerTitle.includes('startup') || lowerTitle.includes('business')) {
+    tags.push('ビジネス');
+  }
+  if (lowerTitle.includes('science') || lowerTitle.includes('research')) {
+    tags.push('科学');
   }
 
-  for (const keyword of keywords.medium) {
-    if (lowerText.includes(keyword)) return 'medium';
-  }
-
-  return 'low';
-}
-
-/**
- * Determine sentiment based on content
- */
-function determineSentiment(text: string): 'blue' | 'green' | 'yellow' | 'red' {
-  const keywords = {
-    green: ['成功', '好調', '上昇', '達成', '改善', '利益'],
-    red: ['失敗', '低迷', '下落', '損失', '問題', '危機'],
-    yellow: ['懸念', '議論', '検討', '予定', '予想'],
-  };
-
-  const lowerText = text.toLowerCase();
-
-  for (const keyword of keywords.green) {
-    if (lowerText.includes(keyword)) return 'green';
-  }
-
-  for (const keyword of keywords.red) {
-    if (lowerText.includes(keyword)) return 'red';
-  }
-
-  for (const keyword of keywords.yellow) {
-    if (lowerText.includes(keyword)) return 'yellow';
-  }
-
-  return 'blue';
-}
-
-/**
- * Extract tags from title
- */
-function extractTags(title: string): string[] {
-  // Simple tag extraction - could be enhanced with NLP
-  const words = title.split(/\s+/).filter((w) => w.length > 2);
-  return words.slice(0, 3);
-}
-
-/**
- * Clean HTML/XML text
- */
-function cleanText(text: string): string {
-  return text
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&[^;]+;/g, '') // Remove HTML entities
-    .replace(/\s+/g, ' ') // Normalize whitespace
-    .trim();
+  return tags.length > 0 ? tags : ['テクノロジー'];
 }
