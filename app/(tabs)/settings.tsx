@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { PremiumSheet } from '@/components/premium-sheet';
+import { PixelText } from '@/components/pixel-text';
+import { PixelButton } from '@/components/pixel-button';
 import { usePlan } from '@/lib/plan-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getCurrentDataSource, setDataSource, getAvailableDataSources, type DataSource } from '@/lib/data-source-manager';
@@ -27,10 +29,10 @@ function SettingRow({
       disabled={!onPress}
       style={({ pressed }) => [styles.settingRow, pressed && onPress && { opacity: 0.7 }]}
     >
-      <Text style={[styles.settingLabel, accent && styles.settingLabelAccent]}>{label}</Text>
-      {value && <Text style={styles.settingValue}>{value}</Text>}
+      <PixelText variant="body" color={accent ? 'accent' : 'primary'}>{label}</PixelText>
+      {value && <PixelText variant="caption" color="muted">{value}</PixelText>}
       {rightElement}
-      {onPress && !rightElement && <Text style={styles.chevron}>›</Text>}
+      {onPress && !rightElement && <PixelText variant="body" color="muted">›</PixelText>}
     </Pressable>
   );
 }
@@ -38,7 +40,7 @@ function SettingRow({
 function SectionHeader({ title }: { title: string }) {
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
+      <PixelText variant="mono" color="muted">{title}</PixelText>
     </View>
   );
 }

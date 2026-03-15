@@ -6,6 +6,8 @@ import { WaveDisplay } from '@/components/wave-display';
 import { WaveLegend } from '@/components/wave-legend';
 import { SourceBadge } from '@/components/source-badge';
 import { OpenSourceButton } from '@/components/open-source-button';
+import { PixelText } from '@/components/pixel-text';
+import { PixelButton } from '@/components/pixel-button';
 import { MOCK_TOPICS } from '@/lib/mock-data';
 import { WAVE_LEVEL_LABEL, WAVE_SENTIMENT_LABEL } from '@/lib/types';
 
@@ -19,10 +21,8 @@ export default function TopicDetailScreen() {
     return (
       <ScreenContainer>
         <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>トピックが見つかりません</Text>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← 戻る</Text>
-          </Pressable>
+          <PixelText variant="body" color="muted">トピックが見つかりません</PixelText>
+          <PixelButton label="← 戻る" onPress={() => router.back()} variant="secondary" />
         </View>
       </ScreenContainer>
     );
@@ -34,14 +34,9 @@ export default function TopicDetailScreen() {
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-        >
-          <Text style={styles.backBtnText}>← 戻る</Text>
-        </Pressable>
+        <PixelButton label="← 戻る" onPress={() => router.back()} variant="secondary" size="sm" />
         <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>{topic.category}</Text>
+          <PixelText variant="mono" color="muted">{topic.category}</PixelText>
         </View>
       </View>
 
@@ -71,28 +66,28 @@ export default function TopicDetailScreen() {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>{topic.title}</Text>
+        <PixelText variant="h2" color="primary">{topic.title}</PixelText>
 
         {/* Wave Legend */}
         <View style={styles.legendCard}>
-          <Text style={styles.legendCardTitle}>波の状態</Text>
+          <PixelText variant="mono" color="muted">波の状況</PixelText>
           <WaveLegend level={topic.waveLevel} sentiment={topic.waveSentiment} />
           <View style={styles.legendDetail}>
-            <Text style={styles.legendDetailText}>
-              この話題は<Text style={styles.highlight}>{WAVE_LEVEL_LABEL[topic.waveLevel]}</Text>で、
-              反応傾向は<Text style={styles.highlight}>{WAVE_SENTIMENT_LABEL[topic.waveSentiment]}</Text>です。
-            </Text>
+            <PixelText variant="body" color="secondary">
+              この話題は<PixelText variant="body" color="accent">{WAVE_LEVEL_LABEL[topic.waveLevel]}</PixelText>で、
+              反応傾向は<PixelText variant="body" color="accent">{WAVE_SENTIMENT_LABEL[topic.waveSentiment]}</PixelText>です。
+            </PixelText>
           </View>
         </View>
 
         {/* Detail text */}
-        <Text style={styles.detail}>{topic.detail}</Text>
+        <PixelText variant="body" color="secondary">{topic.detail}</PixelText>
 
         {/* Tags */}
         <View style={styles.tagRow}>
           {topic.tags.map((tag) => (
             <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
+              <PixelText variant="caption" color="muted">#{tag}</PixelText>
             </View>
           ))}
         </View>

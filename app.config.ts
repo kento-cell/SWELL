@@ -32,7 +32,7 @@ const env = {
   appSlug: "swell",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663432935536/fm7HHZWKDrv49qvFuUcDpT/swell-icon-LzEAitePwXp9S4aKVnU8YA.png",
+  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663432935536/fm7HHZWKDrv49qvFuUcDpT/swell-gradient-icon-Rt7pAnGKZjRYFpeuVu6BLe.webp",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,

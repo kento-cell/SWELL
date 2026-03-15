@@ -21,6 +21,7 @@ import { LockOverlay } from '@/components/lock-overlay';
 import { Tutorial } from '@/components/tutorial';
 import { PremiumSheet } from '@/components/premium-sheet';
 import { WaveRankingWidget } from '@/components/wave-ranking-widget';
+import { PixelText } from '@/components/pixel-text';
 import { usePlan } from '@/lib/plan-context';
 import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
 import { Category, FREE_CATEGORIES } from '@/lib/types';
@@ -95,8 +96,8 @@ export default function HomeScreen() {
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>SWELL</Text>
-        <Text style={styles.tagline}>ニュースを読む前に、波を見る</Text>
+        <PixelText variant="h1" color="primary">SWELL</PixelText>
+        <PixelText variant="caption" color="muted" style={{ marginTop: 4 }}>ニュースを読む前に、波を見る</PixelText>
       </View>
 
       {/* Wave Ranking Widget */}
