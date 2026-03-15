@@ -7,6 +7,7 @@ import { PixelButton } from '@/components/pixel-button';
 import { usePlan } from '@/lib/plan-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getCurrentDataSource, setDataSource, getAvailableDataSources, type DataSource } from '@/lib/data-source-manager';
+import { ThemeSelector } from '@/components/theme-selector';
 
 const APP_VERSION = '1.0.0 (demo)';
 
@@ -97,6 +98,12 @@ export default function SettingsScreen() {
               </Pressable>
             )}
           </View>
+        </View>
+
+        {/* Theme Section */}
+        <SectionHeader title="デザイン" />
+        <View style={[styles.section, { padding: 16 }]}>
+          <ThemeSelector />
         </View>
 
         {/* Data Source Section */}
