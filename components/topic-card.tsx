@@ -4,6 +4,7 @@ import { Topic } from '@/lib/types';
 import { WaveDisplay } from './wave-display';
 import { WaveLegend } from './wave-legend';
 import { SourceBadge } from './source-badge';
+import { useThemeContext } from '@/lib/theme-provider';
 
 interface TopicCardProps {
   topic: Topic;
@@ -13,14 +14,24 @@ interface TopicCardProps {
 export function TopicCard({ topic, onPress }: TopicCardProps) {
   const { width } = useWindowDimensions();
   const cardWidth = Math.min(width - 32, 400);
+  const { themeConfig } = useThemeContext();
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          width: cardWidth,
+          backgroundColor: themeConfig.colors.surface,
+          borderColor: themeConfig.colors.border,
+          borderRadius: themeConfig.borderRadius.md,
+        },
+        pressed && styles.pressed,
+      ]}
     >
       {/* Wave visualization */}
-      <View style={styles.waveContainer}>
+      <View style={[styles.waveContainer, { borderBottomColor: themeConfig.colors.border }]}>
         <WaveDisplay
           level={topic.waveLevel}
           sentiment={topic.waveSentiment}
@@ -39,26 +50,32 @@ export function TopicCard({ topic, onPress }: TopicCardProps) {
         </View>
 
         {/* Title */}
-        <Text style={styles.title} numberOfLines={3}>
+        <Text
+          style={[styles.title, { color: themeConfig.colors.foreground, fontFamily: themeConfig.typography.fontFamily }]}
+          numberOfLines={3}
+        >
           {topic.title}
         </Text>
 
         {/* Summary */}
-        <Text style={styles.summary} numberOfLines={2}>
+        <Text
+          style={[styles.summary, { color: themeConfig.colors.muted, fontFamily: themeConfig.typography.fontFamily }]}
+          numberOfLines={2}
+        >
           {topic.summary}
         </Text>
 
         {/* Tags */}
         <View style={styles.tagRow}>
           {topic.tags.slice(0, 3).map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
+            <View key={tag} style={[styles.tag, { backgroundColor: themeConfig.colors.background }]}>
+              <Text style={[styles.tagText, { color: themeConfig.colors.muted }]}>#{tag}</Text>
             </View>
           ))}
         </View>
 
         {/* Tap hint */}
-        <Text style={styles.tapHint}>タップで詳細を見る →</Text>
+        <Text style={[styles.tapHint, { color: themeConfig.colors.muted }]}>タップで詳細を見る →</Text>
       </View>
     </Pressable>
   );
@@ -66,10 +83,7 @@ export function TopicCard({ topic, onPress }: TopicCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#111827',
     borderWidth: 1,
-    borderColor: '#1F2937',
-    borderRadius: 4,
     overflow: 'hidden',
   },
   pressed: {
@@ -78,7 +92,6 @@ const styles = StyleSheet.create({
   },
   waveContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
   },
   content: {
     padding: 16,
@@ -90,14 +103,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    color: '#E8EDF5',
     fontSize: 18,
     fontWeight: '700',
     lineHeight: 26,
     letterSpacing: -0.3,
   },
   summary: {
-    color: '#9CA3AF',
     fontSize: 13,
     lineHeight: 20,
   },
@@ -107,20 +118,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tag: {
-    backgroundColor: '#1F2937',
     borderRadius: 2,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   tagText: {
-    color: '#6B7280',
     fontSize: 10,
     fontFamily: 'monospace',
   },
   tapHint: {
-    color: '#374151',
     fontSize: 10,
     fontFamily: 'monospace',
     textAlign: 'right',
+    opacity: 0.6,
   },
 });

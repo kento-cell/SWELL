@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { usePlan } from '@/lib/plan-context';
+import { useThemeContext } from '@/lib/theme-provider';
 
 const STEPS = [
   {
@@ -63,6 +64,8 @@ function PixelWaveIllustration({ color }: { color: string }) {
 
 export function Tutorial() {
   const { setTutorialDone } = usePlan();
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
   const [step, setStep] = useState(0);
 
   const isLast = step === STEPS.length - 1;
@@ -81,14 +84,19 @@ export function Tutorial() {
   };
 
   return (
-    <View style={styles.overlay}>
-      <View style={styles.card}>
+    <View style={[styles.overlay, { backgroundColor: `${tc.background}F2` }]}>
+      <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border, borderRadius: themeConfig.borderRadius.sm }]}>
         {/* Step indicator */}
         <View style={styles.stepRow}>
           {STEPS.map((_, i) => (
             <View
               key={i}
-              style={[styles.stepDot, i === step ? styles.stepDotActive : styles.stepDotInactive]}
+              style={[
+                styles.stepDot,
+                i === step
+                  ? [styles.stepDotActive, { backgroundColor: tc.primary }]
+                  : [styles.stepDotInactive, { backgroundColor: tc.border }],
+              ]}
             />
           ))}
         </View>
@@ -99,24 +107,32 @@ export function Tutorial() {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>{current.title}</Text>
+        <Text style={[styles.title, { color: tc.foreground }]}>{current.title}</Text>
 
         {/* Description */}
-        <Text style={styles.description}>{current.description}</Text>
+        <Text style={[styles.description, { color: tc.muted }]}>{current.description}</Text>
 
         {/* Buttons */}
         <View style={styles.buttonRow}>
           <Pressable
             onPress={handleSkip}
-            style={({ pressed }) => [styles.skipButton, pressed && { opacity: 0.6 }]}
+            style={({ pressed }) => [
+              styles.skipButton,
+              { borderColor: tc.border, borderRadius: themeConfig.borderRadius.sm },
+              pressed && { opacity: 0.6 },
+            ]}
           >
-            <Text style={styles.skipText}>スキップ</Text>
+            <Text style={[styles.skipText, { color: tc.muted }]}>スキップ</Text>
           </Pressable>
           <Pressable
             onPress={handleNext}
-            style={({ pressed }) => [styles.nextButton, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [
+              styles.nextButton,
+              { backgroundColor: tc.primary, borderRadius: themeConfig.borderRadius.sm },
+              pressed && { opacity: 0.8 },
+            ]}
           >
-            <Text style={styles.nextText}>{isLast ? 'はじめる' : '次へ'}</Text>
+            <Text style={[styles.nextText, { color: tc.background }]}>{isLast ? 'はじめる' : '次へ'}</Text>
           </Pressable>
         </View>
       </View>
@@ -127,17 +143,13 @@ export function Tutorial() {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 14, 26, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
     padding: 24,
   },
   card: {
-    backgroundColor: '#111827',
     borderWidth: 1,
-    borderColor: '#1F2937',
-    borderRadius: 4,
     padding: 28,
     width: '100%',
     maxWidth: 360,
@@ -154,24 +166,19 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   stepDotActive: {
-    backgroundColor: '#3B82F6',
     width: 18,
   },
-  stepDotInactive: {
-    backgroundColor: '#374151',
-  },
+  stepDotInactive: {},
   illustration: {
     marginVertical: 8,
   },
   title: {
-    color: '#E8EDF5',
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'monospace',
     textAlign: 'center',
   },
   description: {
-    color: '#9CA3AF',
     fontSize: 13,
     lineHeight: 22,
     textAlign: 'center',
@@ -187,26 +194,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 2,
     flex: 1,
     alignItems: 'center',
   },
   skipText: {
-    color: '#6B7280',
     fontSize: 13,
     fontFamily: 'monospace',
   },
   nextButton: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#3B82F6',
-    borderRadius: 2,
     flex: 1,
     alignItems: 'center',
   },
   nextText: {
-    color: '#E8EDF5',
     fontSize: 13,
     fontWeight: '700',
     fontFamily: 'monospace',

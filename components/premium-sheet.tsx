@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { usePlan } from '@/lib/plan-context';
+import { useThemeContext } from '@/lib/theme-provider';
 
 interface PremiumSheetProps {
   onClose: () => void;
@@ -17,9 +18,9 @@ const FEATURES = [
   { label: '通知', free: false, premium: true },
 ];
 
-function CheckMark({ active }: { active: boolean }) {
+function CheckMark({ active, tc }: { active: boolean; tc: any }) {
   return (
-    <Text style={[styles.checkMark, active ? styles.checkMarkActive : styles.checkMarkInactive]}>
+    <Text style={[styles.checkMark, { color: active ? tc.success : tc.border }]}>
       {active ? '✓' : '—'}
     </Text>
   );
@@ -27,6 +28,8 @@ function CheckMark({ active }: { active: boolean }) {
 
 export function PremiumSheet({ onClose }: PremiumSheetProps) {
   const { plan, setPlan } = usePlan();
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
 
   const handleUpgrade = () => {
     // Mock upgrade — in production this would trigger StoreKit
@@ -42,15 +45,15 @@ export function PremiumSheet({ onClose }: PremiumSheetProps) {
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { backgroundColor: tc.surface, borderTopColor: tc.border }]}>
         {/* Handle */}
-        <View style={styles.handle} />
+        <View style={[styles.handle, { backgroundColor: tc.border }]} />
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.premiumBadge}>PREMIUM</Text>
-          <Text style={styles.title}>すべての波を観測する</Text>
-          <Text style={styles.price}>月額 ¥480</Text>
+          <Text style={[styles.premiumBadge, { color: tc.primary }]}>PREMIUM</Text>
+          <Text style={[styles.title, { color: tc.foreground }]}>すべての波を観測する</Text>
+          <Text style={[styles.price, { color: tc.primary }]}>月額 ¥480</Text>
         </View>
 
         {/* Feature comparison */}
@@ -59,25 +62,25 @@ export function PremiumSheet({ onClose }: PremiumSheetProps) {
           <View style={styles.featureRow}>
             <View style={styles.featureLabelCol} />
             <View style={styles.featureCheckCol}>
-              <Text style={styles.colHeader}>Free</Text>
+              <Text style={[styles.colHeader, { color: tc.muted }]}>Free</Text>
             </View>
             <View style={styles.featureCheckCol}>
-              <Text style={[styles.colHeader, styles.premiumColHeader]}>Premium</Text>
+              <Text style={[styles.colHeader, { color: tc.primary }]}>Premium</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: tc.border }]} />
 
           {FEATURES.map((f) => (
             <View key={f.label} style={styles.featureRow}>
               <View style={styles.featureLabelCol}>
-                <Text style={styles.featureLabel}>{f.label}</Text>
+                <Text style={[styles.featureLabel, { color: tc.muted }]}>{f.label}</Text>
               </View>
               <View style={styles.featureCheckCol}>
-                <CheckMark active={f.free} />
+                <CheckMark active={f.free} tc={tc} />
               </View>
               <View style={styles.featureCheckCol}>
-                <CheckMark active={f.premium} />
+                <CheckMark active={f.premium} tc={tc} />
               </View>
             </View>
           ))}
@@ -88,19 +91,25 @@ export function PremiumSheet({ onClose }: PremiumSheetProps) {
           {plan === 'free' ? (
             <Pressable
               onPress={handleUpgrade}
-              style={({ pressed }) => [styles.upgradeButton, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [
+                styles.upgradeButton,
+                { backgroundColor: tc.primary, borderRadius: themeConfig.borderRadius.sm },
+                pressed && { opacity: 0.8 },
+              ]}
             >
-              <Text style={styles.upgradeButtonText}>Premiumにアップグレード（¥480/月）</Text>
+              <Text style={[styles.upgradeButtonText, { color: tc.background }]}>
+                Premiumにアップグレード（¥480/月）
+              </Text>
             </Pressable>
           ) : (
             <View style={styles.alreadyPremium}>
-              <Text style={styles.alreadyPremiumText}>✓ Premiumプラン利用中</Text>
+              <Text style={[styles.alreadyPremiumText, { color: tc.success }]}>✓ Premiumプラン利用中</Text>
               <Pressable onPress={handleDowngrade}>
-                <Text style={styles.downgradeText}>Freeに戻す（デモ用）</Text>
+                <Text style={[styles.downgradeText, { color: tc.muted }]}>Freeに戻す（デモ用）</Text>
               </Pressable>
             </View>
           )}
-          <Text style={styles.disclaimer}>
+          <Text style={[styles.disclaimer, { color: tc.muted }]}>
             ※ 現在はデモ版です。実際の課金は発生しません。
           </Text>
         </View>
@@ -120,9 +129,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   sheet: {
-    backgroundColor: '#111827',
     borderTopWidth: 1,
-    borderTopColor: '#1F2937',
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     paddingBottom: 40,
@@ -131,7 +138,6 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: '#374151',
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
@@ -143,19 +149,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   premiumBadge: {
-    color: '#A78BFA',
     fontSize: 11,
     fontFamily: 'monospace',
     letterSpacing: 3,
     fontWeight: '700',
   },
   title: {
-    color: '#E8EDF5',
     fontSize: 18,
     fontWeight: '700',
   },
   price: {
-    color: '#A78BFA',
     fontSize: 22,
     fontWeight: '900',
     fontFamily: 'monospace',
@@ -177,32 +180,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   colHeader: {
-    color: '#6B7280',
     fontSize: 11,
     fontFamily: 'monospace',
     fontWeight: '600',
   },
-  premiumColHeader: {
-    color: '#A78BFA',
-  },
   divider: {
     height: 1,
-    backgroundColor: '#1F2937',
     marginBottom: 4,
   },
   featureLabel: {
-    color: '#9CA3AF',
     fontSize: 13,
   },
   checkMark: {
     fontSize: 14,
     fontWeight: '700',
-  },
-  checkMarkActive: {
-    color: '#10B981',
-  },
-  checkMarkInactive: {
-    color: '#374151',
   },
   ctaArea: {
     padding: 20,
@@ -210,15 +201,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   upgradeButton: {
-    backgroundColor: '#A78BFA',
     paddingHorizontal: 24,
     paddingVertical: 14,
-    borderRadius: 2,
     width: '100%',
     alignItems: 'center',
   },
   upgradeButtonText: {
-    color: '#0A0E1A',
     fontSize: 13,
     fontWeight: '700',
     fontFamily: 'monospace',
@@ -228,17 +216,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alreadyPremiumText: {
-    color: '#10B981',
     fontSize: 14,
     fontWeight: '700',
   },
   downgradeText: {
-    color: '#6B7280',
     fontSize: 11,
     textDecorationLine: 'underline',
   },
   disclaimer: {
-    color: '#374151',
     fontSize: 10,
     textAlign: 'center',
     fontFamily: 'monospace',

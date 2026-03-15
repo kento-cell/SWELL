@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import { useThemeContext } from '@/lib/theme-provider';
 
 // Pixel padlock icon (larger version)
 function PixelPadlock({ size = 48, color = '#A78BFA' }: { size?: number; color?: string }) {
@@ -38,17 +39,24 @@ interface LockOverlayProps {
 }
 
 export function LockOverlay({ category, onUnlockPress }: LockOverlayProps) {
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
+
   return (
-    <View style={styles.overlay}>
+    <View style={[styles.overlay, { backgroundColor: `${tc.background}EE` }]}>
       <View style={styles.content}>
-        <PixelPadlock size={56} color="#A78BFA" />
-        <Text style={styles.title}>{category}</Text>
-        <Text style={styles.subtitle}>Premiumプランで利用可能</Text>
+        <PixelPadlock size={56} color={tc.primary} />
+        <Text style={[styles.title, { color: tc.primary }]}>{category}</Text>
+        <Text style={[styles.subtitle, { color: tc.muted }]}>Premiumプランで利用可能</Text>
         <Pressable
           onPress={onUnlockPress}
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [
+            styles.button,
+            { backgroundColor: tc.primary, borderRadius: themeConfig.borderRadius.sm },
+            pressed && { opacity: 0.7 },
+          ]}
         >
-          <Text style={styles.buttonText}>アップグレードする</Text>
+          <Text style={[styles.buttonText, { color: tc.background }]}>アップグレードする</Text>
         </Pressable>
       </View>
     </View>
@@ -58,7 +66,6 @@ export function LockOverlay({ category, onUnlockPress }: LockOverlayProps) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 14, 26, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -69,30 +76,22 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   title: {
-    color: '#A78BFA',
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'monospace',
     letterSpacing: 2,
   },
   subtitle: {
-    color: '#6B7280',
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,
   },
   button: {
     marginTop: 8,
-    backgroundColor: '#A78BFA',
     paddingHorizontal: 24,
     paddingVertical: 10,
-    borderRadius: 2,
-  },
-  buttonPressed: {
-    opacity: 0.7,
   },
   buttonText: {
-    color: '#0A0E1A',
     fontSize: 13,
     fontWeight: '700',
     fontFamily: 'monospace',

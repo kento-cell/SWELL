@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, TextStyle } from 'react-native';
+import { useThemeContext } from '@/lib/theme-provider';
 
 type TextVariant = 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'mono';
 type TextColor = 'primary' | 'secondary' | 'muted' | 'accent' | 'error' | 'success';
@@ -52,18 +53,8 @@ const VARIANT_STYLES: Record<TextVariant, TextStyle> = {
   },
 };
 
-const COLOR_MAP: Record<TextColor, string> = {
-  primary: '#F0F0F0',     // Off-white
-  secondary: '#8B8B8B',   // Medium gray
-  muted: '#6B7280',       // Muted gray
-  accent: '#E74C3C',      // Famicom Red
-  error: '#C0392B',       // Dark Red
-  success: '#27AE60',     // Famicom Green
-};
-
 /**
- * 8-bit Famicom style text component
- * Consistent typography with monospace font and pixel-perfect sizing
+ * Pixel-art style text component that adapts to the current theme
  */
 export function PixelText({
   children,
@@ -72,17 +63,32 @@ export function PixelText({
   style,
   numberOfLines,
 }: PixelTextProps) {
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
+
+  // Map color tokens to theme colors
+  const getColor = (c: TextColor): string => {
+    switch (c) {
+      case 'primary': return tc.foreground;
+      case 'secondary': return tc.muted;
+      case 'muted': return tc.muted;
+      case 'accent': return tc.primary;
+      case 'error': return tc.error;
+      case 'success': return tc.success;
+      default: return tc.foreground;
+    }
+  };
+
   const variantStyle = VARIANT_STYLES[variant];
-  const textColor = COLOR_MAP[color];
+  const textColor = getColor(color);
 
   return (
     <Text
       style={[
         styles.text,
+        { fontFamily: themeConfig.typography.fontFamily },
         variantStyle,
-        {
-          color: textColor,
-        },
+        { color: textColor },
         style,
       ]}
       numberOfLines={numberOfLines}

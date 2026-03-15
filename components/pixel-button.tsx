@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, ViewStyle, TextStyle } from 'react-native';
-import { cn } from '@/lib/utils';
+import { useThemeContext } from '@/lib/theme-provider';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -16,33 +16,6 @@ interface PixelButtonProps {
   icon?: React.ReactNode;
 }
 
-const VARIANT_COLORS: Record<ButtonVariant, { bg: string; border: string; text: string; pressed: string }> = {
-  primary: {
-    bg: '#E74C3C',      // Famicom Red
-    border: '#C0392B',  // Dark Red
-    text: '#F0F0F0',    // Off-white
-    pressed: '#C0392B',
-  },
-  secondary: {
-    bg: '#2D2D44',      // Dark gray-blue
-    border: '#3D3D5C',  // Darker border
-    text: '#F0F0F0',
-    pressed: '#3D3D5C',
-  },
-  danger: {
-    bg: '#C0392B',      // Dark Red
-    border: '#A93226',  // Darker red
-    text: '#F0F0F0',
-    pressed: '#A93226',
-  },
-  success: {
-    bg: '#27AE60',      // Famicom Green
-    border: '#1E8449',  // Dark Green
-    text: '#F0F0F0',
-    pressed: '#1E8449',
-  },
-};
-
 const SIZE_STYLES: Record<ButtonSize, { padding: number; fontSize: number }> = {
   sm: { padding: 8, fontSize: 11 },
   md: { padding: 12, fontSize: 13 },
@@ -50,8 +23,8 @@ const SIZE_STYLES: Record<ButtonSize, { padding: number; fontSize: number }> = {
 };
 
 /**
- * 8-bit Famicom style button component
- * Features pixel-perfect borders, no rounded corners, retro aesthetic
+ * Theme-aware button component
+ * Adapts to Normal/CLI/8bit themes
  */
 export function PixelButton({
   label,
@@ -63,8 +36,25 @@ export function PixelButton({
   textStyle,
   icon,
 }: PixelButtonProps) {
-  const colors = VARIANT_COLORS[variant];
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
   const sizeStyle = SIZE_STYLES[size];
+
+  // Map variant to theme colors
+  const getColors = () => {
+    switch (variant) {
+      case 'primary':
+        return { bg: tc.primary, border: tc.primary, text: tc.background };
+      case 'secondary':
+        return { bg: tc.surface, border: tc.border, text: tc.foreground };
+      case 'danger':
+        return { bg: tc.error, border: tc.error, text: tc.background };
+      case 'success':
+        return { bg: tc.success, border: tc.success, text: tc.background };
+    }
+  };
+
+  const colors = getColors();
 
   return (
     <Pressable
@@ -73,8 +63,9 @@ export function PixelButton({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: disabled ? '#555555' : pressed ? colors.pressed : colors.bg,
-          borderColor: disabled ? '#333333' : colors.border,
+          backgroundColor: disabled ? tc.muted : pressed ? tc.border : colors.bg,
+          borderColor: disabled ? tc.border : colors.border,
+          borderRadius: themeConfig.borderRadius.sm,
           paddingHorizontal: sizeStyle.padding,
           paddingVertical: sizeStyle.padding * 0.75,
         },
@@ -88,7 +79,8 @@ export function PixelButton({
             styles.label,
             {
               fontSize: sizeStyle.fontSize,
-              color: disabled ? '#999999' : colors.text,
+              color: disabled ? tc.background : colors.text,
+              fontFamily: themeConfig.typography.fontFamily,
             },
             textStyle,
           ]}
@@ -103,7 +95,6 @@ export function PixelButton({
 const styles = StyleSheet.create({
   button: {
     borderWidth: 2,
-    borderRadius: 0, // Pixel perfect - no rounding
     justifyContent: 'center',
     alignItems: 'center',
   },

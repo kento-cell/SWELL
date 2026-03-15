@@ -1,5 +1,6 @@
 import { publicProcedure, router } from '../_core/trpc';
 import { fetchNewsData, fetchSocialData, fetchMarketData, fetchAllCategoryData, fetchJapaneseNewsData, fetchVideosData } from './data-router';
+import { fetchJapaneseNews } from './japanese-news-client';
 import { z } from 'zod';
 
 /**
@@ -176,7 +177,32 @@ export const dataRouter = router({
         let data;
         switch (category) {
           case 'NEWS':
-            data = await fetchNewsData();
+            // 日本語ニュース（RSS + LLM 要約）を優先、失敗時は HackerNews にフォールバック
+            try {
+              const japaneseTopics = await fetchJapaneseNews();
+              if (japaneseTopics.length > 0) {
+                data = {
+                  category: 'NEWS' as const,
+                  items: japaneseTopics.map((t) => ({
+                    id: t.id,
+                    title: t.title,
+                    url: t.sourceUrl || '',
+                    sourceUrl: t.sourceUrl || '',
+                    source: t.source,
+                    waveLevel: t.waveLevel,
+                    waveSentiment: t.waveSentiment,
+                    timestamp: new Date(t.publishedAt).getTime(),
+                    description: t.summary,
+                  })),
+                  lastUpdated: Date.now(),
+                  source: '日本語ニュース (NHK・朝日・毎日・Yahoo)',
+                };
+              } else {
+                data = await fetchNewsData();
+              }
+            } catch {
+              data = await fetchNewsData();
+            }
             break;
           case 'SOCIAL':
             const socialData = await fetchSocialData();

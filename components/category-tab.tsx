@@ -1,7 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Category, CATEGORY_LABEL, FREE_CATEGORIES, PlanType } from '@/lib/types';
+import { Category, FREE_CATEGORIES, PlanType } from '@/lib/types';
 import Svg, { Rect } from 'react-native-svg';
+import { useThemeContext } from '@/lib/theme-provider';
+import { useLocalization } from '@/lib/localization-context';
 
 // Tiny pixel lock icon for tab
 function TinyLock({ color = '#A78BFA' }: { color?: string }) {
@@ -31,8 +33,20 @@ interface CategoryTabProps {
 }
 
 export function CategoryTab({ categories, activeCategory, plan, onSelect }: CategoryTabProps) {
+  const { themeConfig } = useThemeContext();
+  const { t } = useLocalization();
+
+  // カテゴリのラベルを翻訳キーにマッピング
+  const getCategoryLabel = (cat: Category): string => {
+    switch (cat) {
+      case 'NEWS': return t('category.news', 'NEWS');
+      case 'SOCIAL': return t('category.social', 'SOCIAL');
+      case 'MARKET': return t('category.market', 'MARKET');
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeConfig.colors.background, borderBottomColor: themeConfig.colors.border }]}>
       {categories.map((cat) => {
         const isActive = cat === activeCategory;
         const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(cat);
@@ -43,7 +57,6 @@ export function CategoryTab({ categories, activeCategory, plan, onSelect }: Cate
             onPress={() => onSelect(cat)}
             style={({ pressed }) => [
               styles.tab,
-              isActive && styles.tabActive,
               pressed && styles.tabPressed,
             ]}
           >
@@ -51,19 +64,19 @@ export function CategoryTab({ categories, activeCategory, plan, onSelect }: Cate
               <Text
                 style={[
                   styles.tabText,
-                  isActive && styles.tabTextActive,
-                  isLocked && styles.tabTextLocked,
+                  { color: isActive ? themeConfig.colors.foreground : themeConfig.colors.muted },
+                  isLocked && { color: themeConfig.colors.muted },
                 ]}
               >
-                {CATEGORY_LABEL[cat]}
+                {getCategoryLabel(cat)}
               </Text>
               {isLocked && (
                 <View style={styles.lockIcon}>
-                  <TinyLock color="#A78BFA" />
+                  <TinyLock color={themeConfig.colors.primary} />
                 </View>
               )}
             </View>
-            {isActive && <View style={styles.activeBar} />}
+            {isActive && <View style={[styles.activeBar, { backgroundColor: themeConfig.colors.primary }]} />}
           </Pressable>
         );
       })}
@@ -75,8 +88,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
-    backgroundColor: '#0A0E1A',
   },
   tab: {
     flex: 1,
@@ -84,7 +95,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  tabActive: {},
   tabPressed: {
     opacity: 0.7,
   },
@@ -94,17 +104,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tabText: {
-    color: '#4B5563',
     fontSize: 11,
     fontFamily: 'monospace',
     fontWeight: '600',
     letterSpacing: 1.5,
-  },
-  tabTextActive: {
-    color: '#E8EDF5',
-  },
-  tabTextLocked: {
-    color: '#6B7280',
   },
   lockIcon: {
     marginTop: 1,
@@ -115,6 +118,5 @@ const styles = StyleSheet.create({
     left: '20%',
     right: '20%',
     height: 2,
-    backgroundColor: '#3B82F6',
   },
 });
