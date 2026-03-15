@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -25,6 +25,7 @@ import { PixelText } from '@/components/pixel-text';
 import { usePlan } from '@/lib/plan-context';
 import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
 import { Category, FREE_CATEGORIES } from '@/lib/types';
+import { useCategoryData } from '@/hooks/use-real-time-data';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -37,14 +38,22 @@ export default function HomeScreen() {
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  // Fetch real-time data from server
+  const { topics: realtimeTopics, isLoading, error, source } = useCategoryData(activeCategory);
+  
+  // Fallback to mock data if real-time data fails or is loading
+  const topics = realtimeTopics.length > 0 ? realtimeTopics : getTopicsByCategory(activeCategory);
+
   const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory);
-  const topics = getTopicsByCategory(activeCategory);
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
     setCurrentIndex(0);
     flatListRef.current?.scrollToIndex({ index: 0, animated: false });
   };
+
+  // Show loading indicator when fetching real-time data
+  const showLoadingIndicator = isLoading && realtimeTopics.length === 0;
 
   const handlePrev = () => {
     if (currentIndex <= 0) {
@@ -89,15 +98,25 @@ export default function HomeScreen() {
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const currentTopic = topics[currentIndex];
+  const dataSource = realtimeTopics.length > 0 ? source : 'Mock Data';
 
   const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
+
+  // Log data source for debugging
+  useEffect(() => {
+    if (realtimeTopics.length > 0) {
+      console.log(`[HomeScreen] Loaded ${realtimeTopics.length} topics from ${source}`);
+    } else if (error) {
+      console.log(`[HomeScreen] Error loading data: ${error}`);
+    }
+  }, [realtimeTopics, source, error]);
 
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <PixelText variant="h1" color="primary">SWELL</PixelText>
-        <PixelText variant="caption" color="muted" style={{ marginTop: 4 }}>ニュースを読む前に、波を見る</PixelText>
+        <PixelText variant="caption" color="muted" style={{ marginTop: 4 }}>{dataSource}</PixelText>
       </View>
 
       {/* Wave Ranking Widget */}

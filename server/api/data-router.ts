@@ -1,6 +1,6 @@
 import { fetchHackerNewsTopStories, calculateWaveLevel, calculateWaveSentiment } from './news-client';
 import { fetchAllSocialTrending, calculateSocialWaveSentiment } from './rss-social-client';
-import { fetchMarketTrending, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client';
+import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client-v2';
 import { cacheService, CACHE_CONFIG } from './cache-service';
 
 export interface TopicData {
@@ -166,19 +166,19 @@ export async function fetchMarketData(): Promise<CategoryData> {
       category: 'MARKET',
       items: [],
       lastUpdated: Date.now(),
-      source: 'Alpha Vantage (rate limited)',
+      source: 'YahooFinance (rate limited)',
     };
   }
 
   try {
-    const items = await fetchMarketTrending();
+    const items = await fetchMarketTrendingV2();
 
     const topicItems: TopicData[] = items.map((item) => ({
       id: item.id,
       title: item.title,
       url: item.url,
       sourceUrl: item.sourceUrl,
-      source: 'Alpha Vantage',
+      source: 'YahooFinance',
       waveLevel: calculateMarketWaveLevel(item.change ?? 0),
       waveSentiment: calculateMarketWaveSentiment(item.change ?? 0),
       timestamp: item.timestamp,
@@ -191,7 +191,7 @@ export async function fetchMarketData(): Promise<CategoryData> {
       category: 'MARKET',
       items: topicItems,
       lastUpdated: Date.now(),
-      source: 'Alpha Vantage API',
+      source: 'YahooFinance API',
     };
 
     // Cache the result
@@ -204,7 +204,7 @@ export async function fetchMarketData(): Promise<CategoryData> {
       category: 'MARKET',
       items: [],
       lastUpdated: Date.now(),
-      source: 'Alpha Vantage API (error)',
+      source: 'YahooFinance API (error)',
     };
   }
 }
