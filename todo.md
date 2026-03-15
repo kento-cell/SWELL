@@ -135,3 +135,12 @@
 - [x] 設定画面にテーマ選択 UI追加
 - [x] テーマ切り替え動作確認
 - [x] テーマコンテキスト実装（4件）
+
+
+## ThemeProvider統合・ウィジェット対応
+- [x] theme-provider.tsx にデザインテーマ機能を統合
+- [x] theme-context.tsx を削除・不要ファイル整理
+- [x] App Clipsウィジェット（widget.tsx）にテーマ適用
+- [x] Settings画面に統一テーマ切り替えUI実装
+- [x] アイコン・ウィジェット・アプリ内デザイン一括切り替え機能
+- [x] AsyncStorage同期確認

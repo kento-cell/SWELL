@@ -7,7 +7,7 @@ import { PixelButton } from '@/components/pixel-button';
 import { usePlan } from '@/lib/plan-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getCurrentDataSource, setDataSource, getAvailableDataSources, type DataSource } from '@/lib/data-source-manager';
-import { ThemeSelector } from '@/components/theme-selector';
+import { useThemeContext } from '@/lib/theme-provider';
 
 const APP_VERSION = '1.0.0 (demo)';
 
@@ -48,6 +48,7 @@ function SectionHeader({ title }: { title: string }) {
 
 export default function SettingsScreen() {
   const { plan, setPlan } = usePlan();
+  const { designTheme, setDesignTheme } = useThemeContext();
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const [dataSource, setDataSourceState] = useState<DataSource>('mock');
 
@@ -103,7 +104,31 @@ export default function SettingsScreen() {
         {/* Theme Section */}
         <SectionHeader title="デザイン" />
         <View style={[styles.section, { padding: 16 }]}>
-          <ThemeSelector />
+          <View style={{ gap: 12 }}>
+            {(['normal', 'cli', '8bit'] as const).map((theme) => (
+              <Pressable
+                key={theme}
+                onPress={() => setDesignTheme(theme)}
+                style={({ pressed }) => [
+                  styles.themeOption,
+                  designTheme === theme && styles.themeOptionActive,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <View style={styles.themeOptionContent}>
+                  <View
+                    style={[
+                      styles.themeIndicator,
+                      designTheme === theme && styles.themeIndicatorActive,
+                    ]}
+                  />
+                  <PixelText variant="body">
+                    {theme === 'normal' ? 'ノーマル' : theme === 'cli' ? 'CLI' : '8bit'}
+                  </PixelText>
+                </View>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         {/* Data Source Section */}
@@ -393,5 +418,34 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     fontSize: 16,
     fontWeight: '700',
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    borderRadius: 2,
+  },
+  themeOptionActive: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#0F1419',
+  },
+  themeOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  themeIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#4B5563',
+  },
+  themeIndicatorActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
 });

@@ -1,12 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Appearance, View, useColorScheme as useSystemColorScheme } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colorScheme as nativewindColorScheme, vars } from "nativewind";
 
 import { SchemeColors, type ColorScheme } from "@/constants/theme";
+import { ThemeType, getTheme, ThemeConfig } from "@/lib/theme-system";
 
 type ThemeContextValue = {
   colorScheme: ColorScheme;
   setColorScheme: (scheme: ColorScheme) => void;
+  designTheme: ThemeType;
+  setDesignTheme: (theme: ThemeType) => Promise<void>;
+  themeConfig: ThemeConfig;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -14,6 +19,27 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useSystemColorScheme() ?? "light";
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(systemScheme);
+  const [designTheme, setDesignThemeState] = useState<ThemeType>("normal");
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(getTheme("normal"));
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load design theme preference on mount
+  useEffect(() => {
+    loadDesignTheme();
+  }, []);
+
+  const loadDesignTheme = async () => {
+    try {
+      const saved = await AsyncStorage.getItem("app_design_theme");
+      const theme = (saved as ThemeType) || "normal";
+      setDesignThemeState(theme);
+      setThemeConfig(getTheme(theme));
+    } catch (error) {
+      console.error("Error loading design theme:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const applyScheme = useCallback((scheme: ColorScheme) => {
     nativewindColorScheme.set(scheme);
@@ -33,6 +59,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setColorSchemeState(scheme);
     applyScheme(scheme);
   }, [applyScheme]);
+
+  const setDesignTheme = useCallback(async (theme: ThemeType) => {
+    try {
+      setDesignThemeState(theme);
+      setThemeConfig(getTheme(theme));
+      await AsyncStorage.setItem("app_design_theme", theme);
+    } catch (error) {
+      console.error("Error setting design theme:", error);
+    }
+  }, []);
 
   useEffect(() => {
     applyScheme(colorScheme);
@@ -58,10 +94,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       colorScheme,
       setColorScheme,
+      designTheme,
+      setDesignTheme,
+      themeConfig,
     }),
-    [colorScheme, setColorScheme],
+    [colorScheme, setColorScheme, designTheme, setDesignTheme, themeConfig],
   );
-  console.log(value, themeVariables)
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <ThemeContext.Provider value={value}>
@@ -77,3 +119,6 @@ export function useThemeContext(): ThemeContextValue {
   }
   return ctx;
 }
+
+// Alias for backward compatibility
+export const useTheme = useThemeContext;
