@@ -293,11 +293,11 @@ export async function fetchJapaneseNewsData(): Promise<CategoryData> {
 /**
  * Fetch trending videos
  */
-export async function fetchVideosData(): Promise<VideoData[]> {
+export async function fetchVideosData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.SOCIAL;
 
   // Check cache first
-  const cached = cacheService.get<VideoData[]>('trending_videos');
+  const cached = cacheService.get<CategoryData>('trending_videos');
   if (cached) {
     return cached;
   }
@@ -305,12 +305,35 @@ export async function fetchVideosData(): Promise<VideoData[]> {
   try {
     const videos = await fetchTrendingVideos('JP');
 
-    // Cache the result
-    cacheService.set('trending_videos', videos, config.ttl);
+    const items: TopicData[] = videos.map((video: any) => ({
+      id: video.id,
+      title: video.title,
+      url: video.url,
+      sourceUrl: video.url,
+      source: video.source,
+      waveLevel: 'medium' as const,
+      waveSentiment: 'green' as const,
+      timestamp: new Date(video.publishedAt).getTime(),
+      description: video.description,
+    }));
 
-    return videos;
+    const result: CategoryData = {
+      category: 'SOCIAL',
+      items,
+      lastUpdated: Date.now(),
+      source: 'YouTube/TikTok Trending',
+    };
+
+    cacheService.set('trending_videos', result, config.ttl);
+
+    return result;
   } catch (error) {
     console.error('Error fetching trending videos:', error);
-    return [];
+    return {
+      category: 'SOCIAL',
+      items: [],
+      lastUpdated: Date.now(),
+      source: 'YouTube/TikTok (error)',
+    };
   }
 }

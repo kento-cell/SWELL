@@ -179,7 +179,15 @@ export const dataRouter = router({
             data = await fetchNewsData();
             break;
           case 'SOCIAL':
-            data = await fetchSocialData();
+            const socialData = await fetchSocialData();
+            const videosData = await fetchVideosData();
+            data = {
+              ...socialData,
+              items: [
+                ...(socialData.items || []),
+                ...(videosData.items || []),
+              ],
+            };
             break;
           case 'MARKET':
             data = await fetchMarketData();
