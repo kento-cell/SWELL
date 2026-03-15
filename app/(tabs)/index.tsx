@@ -28,6 +28,7 @@ import { Category, FREE_CATEGORIES } from '@/lib/types';
 import { useCategoryData } from '@/hooks/use-real-time-data';
 import { useTopicContext } from '@/lib/topic-context';
 import { useColors } from '@/hooks/use-colors';
+import { useLocalization } from '@/lib/localization-context';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -37,6 +38,7 @@ export default function HomeScreen() {
   const { plan, tutorialDone } = usePlan();
   const { setSelectedTopic } = useTopicContext();
   const colors = useColors();
+  const { t } = useLocalization();
   const [activeCategory, setActiveCategory] = useState<Category>('NEWS');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
@@ -139,7 +141,7 @@ export default function HomeScreen() {
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <PixelText variant="h1" color="primary">SWELL</PixelText>
+        <PixelText variant="h1" color="primary">{t('app.title')}</PixelText>
         <PixelText variant="caption" color="muted" style={{ marginTop: 4 }}>{dataSource}</PixelText>
       </View>
 
