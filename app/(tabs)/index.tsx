@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/screen-container';
 import { CategoryTab } from '@/components/category-tab';
 import { TopicCard } from '@/components/topic-card';
+import { VideoCard } from '@/components/video-card';
 import { PixelArrow } from '@/components/pixel-arrow';
 import { PageIndicator } from '@/components/page-indicator';
 import { LockOverlay } from '@/components/lock-overlay';
@@ -185,21 +186,21 @@ export default function HomeScreen() {
               onViewableItemsChanged={onViewableItemsChanged}
               viewabilityConfig={viewabilityConfig}
               renderItem={({ item }) => {
+                // SOCIAL カテゴリで動画データがある場合は VideoCard を使用
+                const isVideoItem = activeCategory === 'SOCIAL' && item.videoType;
                 return (
                   <View style={{ width: CARD_WIDTH, marginHorizontal: 8 }}>
-                    <TopicCard
-                      topic={item}
-                      onPress={() => {
-                        if (item.sourceUrl) {
-                          // 記事URLがある場合はブラウザで開く or 詳細画面へ
+                    {isVideoItem ? (
+                      <VideoCard topic={item} cardWidth={CARD_WIDTH} />
+                    ) : (
+                      <TopicCard
+                        topic={item}
+                        onPress={() => {
                           setSelectedTopic(item);
                           router.push({ pathname: '/topic/[id]', params: { id: item.id } });
-                        } else {
-                          setSelectedTopic(item);
-                          router.push({ pathname: '/topic/[id]', params: { id: item.id } });
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    )}
                   </View>
                 );
               }}

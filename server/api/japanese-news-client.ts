@@ -1,10 +1,9 @@
 /**
  * Japanese News Client
- * 日本語ニュースを RSS フィードから取得し、LLM で AI 要約する
- * ゼロコスト設計: NHK・朝日・毎日・Yahoo!ニュース・livedoor の無料 RSS を使用
+ * 日本語ニュースを RSS フィードから取得し、キーワードベースで感情・波レベルを判定
+ * コスト完全ゼロ設計: 外部 API・LLM 一切不使用
  */
 
-import { invokeLLM } from '../_core/llm';
 import { Topic, WaveLevel, WaveSentiment } from '@/lib/types';
 
 interface RawNewsItem {
@@ -26,10 +25,6 @@ const JAPAN_NEWS_FEEDS = [
     source: '朝日新聞',
   },
   {
-    url: 'https://mainichi.jp/rss/etc/mainichi-flash.rss',
-    source: '毎日新聞',
-  },
-  {
     url: 'https://news.livedoor.com/topics/rss/top.xml',
     source: 'livedoor',
   },
@@ -39,10 +34,108 @@ const JAPAN_NEWS_FEEDS = [
   },
 ];
 
-// RSS XML をパースして記事リストを取得
+// ============================================================
+// キーワードベース感情・波レベル判定（コスト0）
+// ============================================================
+
+const NEGATIVE_KEYWORDS = [
+  '死亡', '死者', '事故', '事件', '逮捕', '火災', '地震', '津波', '台風', '洪水',
+  '被害', '崩壊', '爆発', '暴行', '殺人', '自殺', '倒産', '破産', '失業', '不正',
+  '汚職', '詐欺', '違反', '批判', '抗議', '反発', '懸念', '危機', '警告', '緊急',
+  '禁止', '中止', '延期', '撤退', '失敗', '敗北', '落下', '墜落', '衝突', '感染',
+  '流行', '蔓延', 'コロナ', '訃報', '遺体', '行方不明', '捜索', '炎上', '問題',
+];
+
+const POSITIVE_KEYWORDS = [
+  '成長', '達成', '成功', '優勝', '受賞', '開発', '開通', '開業', '誕生', '回復',
+  '改善', '向上', '増加', '拡大', '発展', '革新', '突破', '記録', '歴史的', '初',
+  '解決', '和解', '合意', '協力', '支援', '救助', '復興', '再生', '活性化', '好調',
+  '黒字', '増益', '上昇', '高値', '最高', '感謝', '喜び', '祝', '祭', '快挙',
+];
+
+const HIGH_WAVE_KEYWORDS = [
+  '速報', '緊急', '重大', '大規模', '最大', '史上', '歴史的', '初めて', '衝撃',
+  '震度', 'M7', 'M8', '大地震', '大津波', '大火災', '大事故', '死者多数',
+  '首相', '大統領', '総理', '政府', '国会', '選挙', '戦争', '核', 'ミサイル',
+  '株価急落', '急騰', '暴落', '暴騰', 'ショック', 'パニック', '大停電',
+];
+
+const LOW_WAVE_KEYWORDS = [
+  '特集', 'コラム', 'インタビュー', '連載', '解説', 'まとめ', 'ランキング',
+  'レビュー', '紹介', 'おすすめ', 'ガイド', 'ヒント', 'コツ', 'レシピ',
+];
+
+/**
+ * キーワードマッチで感情を判定（コスト0）
+ */
+function detectSentiment(title: string, description: string): WaveSentiment {
+  const text = title + ' ' + description;
+
+  let negScore = 0;
+  let posScore = 0;
+
+  for (const kw of NEGATIVE_KEYWORDS) {
+    if (text.includes(kw)) negScore++;
+  }
+  for (const kw of POSITIVE_KEYWORDS) {
+    if (text.includes(kw)) posScore++;
+  }
+
+  if (negScore > posScore + 1) return 'red';
+  if (negScore > 0 && posScore > 0) return 'yellow'; // 賛否割れ
+  if (posScore > negScore) return 'green';
+  return 'blue'; // 中立
+}
+
+/**
+ * キーワードマッチで波レベルを判定（コスト0）
+ */
+function detectWaveLevel(title: string, description: string): WaveLevel {
+  const text = title + ' ' + description;
+
+  for (const kw of HIGH_WAVE_KEYWORDS) {
+    if (text.includes(kw)) return 'high';
+  }
+  for (const kw of LOW_WAVE_KEYWORDS) {
+    if (text.includes(kw)) return 'low';
+  }
+  return 'medium';
+}
+
+/**
+ * タグをタイトルから自動生成（コスト0）
+ */
+function extractTags(title: string): string[] {
+  const tagMap: Record<string, string[]> = {
+    '政治': ['政府', '国会', '首相', '大臣', '選挙', '自民', '立民', '公明', '維新'],
+    '経済': ['株', '円', 'GDP', '物価', '景気', '企業', '業績', '上場', '倒産', '雇用'],
+    '社会': ['事件', '事故', '裁判', '警察', '逮捕', '火災', '交通'],
+    '国際': ['米国', '中国', '韓国', 'ロシア', '欧州', '国連', '外交', '外相'],
+    'テクノロジー': ['AI', 'IT', 'デジタル', 'スマホ', 'アプリ', 'ゲーム', 'ロボット'],
+    'スポーツ': ['野球', 'サッカー', 'テニス', '水泳', 'オリンピック', '優勝', '決勝'],
+    'エンタメ': ['映画', '音楽', 'ドラマ', 'アニメ', '芸能', '俳優', '歌手'],
+    '科学': ['研究', '発見', '宇宙', 'NASA', 'JAXA', '医療', 'ワクチン'],
+    '気象': ['地震', '台風', '大雨', '豪雪', '猛暑', '気温', '天気'],
+  };
+
+  const tags: string[] = [];
+  for (const [tag, keywords] of Object.entries(tagMap)) {
+    for (const kw of keywords) {
+      if (title.includes(kw)) {
+        tags.push(tag);
+        break;
+      }
+    }
+  }
+
+  return tags.length > 0 ? tags.slice(0, 3) : ['総合'];
+}
+
+/**
+ * RSS XML をパースして記事リストを取得
+ */
 function parseRSS(xml: string, source: string): RawNewsItem[] {
   const items: RawNewsItem[] = [];
-
   const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
   let match;
 
@@ -66,19 +159,30 @@ function parseRSS(xml: string, source: string): RawNewsItem[] {
 
     if (title && link) {
       items.push({
-        title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"'),
+        title: title
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/<[^>]+>/g, ''),
         link: link.replace(/&amp;/g, '&'),
-        description: description.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim(),
+        description: description
+          .replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g, '&')
+          .replace(/&nbsp;/g, ' ')
+          .trim(),
         pubDate,
         source,
       });
     }
   }
 
-  return items.slice(0, 5); // 各ソースから最大5件
+  return items.slice(0, 6); // 各ソースから最大6件
 }
 
-// RSS フィードを取得
+/**
+ * RSS フィードを取得
+ */
 async function fetchFeed(url: string, source: string): Promise<RawNewsItem[]> {
   try {
     const response = await fetch(url, {
@@ -86,7 +190,7 @@ async function fetchFeed(url: string, source: string): Promise<RawNewsItem[]> {
         'User-Agent': 'Mozilla/5.0 (compatible; SwellNewsBot/1.0)',
         Accept: 'application/rss+xml, application/xml, text/xml, */*',
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(6000),
     });
 
     if (!response.ok) {
@@ -98,124 +202,48 @@ async function fetchFeed(url: string, source: string): Promise<RawNewsItem[]> {
     console.log(`[JapanNews] ${source}: ${items.length} items fetched`);
     return items;
   } catch (err) {
-    console.warn(`[JapanNews] ${source}: fetch failed`, err);
+    console.warn(`[JapanNews] ${source}: fetch failed`, (err as Error).message);
     return [];
   }
 }
 
-// LLM で記事を日本語要約
-async function summarizeWithLLM(items: RawNewsItem[]): Promise<Topic[]> {
-  if (items.length === 0) return [];
+/**
+ * RawNewsItem → Topic 変換（コスト0・LLM不使用）
+ */
+function convertToTopics(items: RawNewsItem[]): Topic[] {
+  return items.map((item, i) => {
+    const waveLevel = detectWaveLevel(item.title, item.description);
+    const waveSentiment = detectSentiment(item.title, item.description);
+    const tags = extractTags(item.title);
 
-  const articlesText = items
-    .map(
-      (item, i) =>
-        `[記事${i + 1}]\nタイトル: ${item.title}\n概要: ${item.description?.slice(0, 200) || 'なし'}\nソース: ${item.source}`
-    )
-    .join('\n\n');
+    // description が短い/空の場合はタイトルを使用
+    const summary =
+      item.description && item.description.length > 10
+        ? item.description.slice(0, 150) + (item.description.length > 150 ? '…' : '')
+        : item.title;
 
-  try {
-    const response = await invokeLLM({
-      messages: [
-        {
-          role: 'system',
-          content: `あなたは日本語ニュースの要約専門家です。
-与えられた記事リストを分析し、以下のJSON形式で返してください。
-必ず日本語で回答し、articles配列に各記事の情報を含めてください。
-
-{
-  "articles": [
-    {
-      "summary": "2〜3文の日本語要約",
-      "category": "政治|経済|社会|国際|テクノロジー|スポーツ|エンタメ|科学",
-      "waveLevel": "low|medium|high",
-      "sentiment": "positive|neutral|negative",
-      "tags": ["タグ1", "タグ2"]
-    }
-  ]
-}
-
-waveLevel の基準:
-- high: 重大ニュース、速報、大きな社会的影響
-- medium: 一般的なニュース
-- low: 軽微なニュース、特集記事
-
-sentiment の基準:
-- positive: 良いニュース、成功、発展
-- negative: 事件、事故、問題、批判
-- neutral: 中立的な報道`,
-        },
-        {
-          role: 'user',
-          content: `以下の${items.length}件の記事を要約してください:\n\n${articlesText}`,
-        },
-      ],
-      response_format: {
-        type: 'json_object',
-      },
-    });
-
-    const rawContent = response.choices[0]?.message?.content;
-    const content = typeof rawContent === 'string' ? rawContent : '{}';
-    const parsed = JSON.parse(content);
-    const summaries: Array<{
-      summary?: string;
-      category?: string;
-      waveLevel?: string;
-      sentiment?: string;
-      tags?: string[];
-    }> = parsed.articles || [];
-
-    return items.map((item, i) => {
-      const s = summaries[i] || {};
-      const waveLevel = (s.waveLevel as WaveLevel) || 'medium';
-      const sentiment = s.sentiment || 'neutral';
-
-      // sentiment → waveSentiment マッピング
-      const waveSentiment: WaveSentiment =
-        sentiment === 'positive' ? 'green' :
-        sentiment === 'negative' ? 'red' :
-        'blue';
-
-      return {
-        id: `japan-${Date.now()}-${i}`,
-        category: 'NEWS' as const,
-        title: item.title,
-        summary: s.summary || item.description?.slice(0, 100) || item.title,
-        detail: item.description || item.title,
-        waveLevel,
-        waveSentiment,
-        source: item.source,
-        sourceUrl: item.link,
-        publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-        tags: s.tags || [s.category || '総合'],
-      };
-    });
-  } catch (err) {
-    console.error('[JapanNews] LLM summarization failed:', err);
-    // LLM 失敗時はそのまま返す（要約なし）
-    return items.map((item, i) => ({
+    return {
       id: `japan-${Date.now()}-${i}`,
       category: 'NEWS' as const,
       title: item.title,
-      summary: item.description?.slice(0, 150) || item.title,
+      summary,
       detail: item.description || item.title,
-      waveLevel: 'medium' as WaveLevel,
-      waveSentiment: 'blue' as WaveSentiment,
+      waveLevel,
+      waveSentiment,
       source: item.source,
       sourceUrl: item.link,
       publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-      tags: ['総合'],
-    }));
-  }
+      tags,
+    };
+  });
 }
 
-// キャッシュ（5分）
+// キャッシュ（10分 — LLM不使用なので少し長めに）
 let cache: { data: Topic[]; timestamp: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 10 * 60 * 1000;
 
 /**
- * メイン関数: 日本語ニュースを取得して AI 要約
+ * メイン関数: 日本語ニュースを取得してキーワード分析（コスト0）
  */
 export async function fetchJapaneseNews(): Promise<Topic[]> {
   // キャッシュチェック
@@ -224,7 +252,7 @@ export async function fetchJapaneseNews(): Promise<Topic[]> {
     return cache.data;
   }
 
-  console.log('[JapanNews] Fetching from RSS feeds...');
+  console.log('[JapanNews] Fetching from RSS feeds (zero-cost mode)...');
 
   // 全フィードを並列取得
   const feedResults = await Promise.allSettled(
@@ -245,15 +273,13 @@ export async function fetchJapaneseNews(): Promise<Topic[]> {
     return getFallbackTopics();
   }
 
-  // 最新順にソートして上位15件を要約
-  const topItems = allItems.slice(0, 15);
-  console.log(`[JapanNews] Summarizing ${topItems.length} items with LLM...`);
-  const summarized = await summarizeWithLLM(topItems);
+  // キーワードベース変換（LLM不使用・コスト0）
+  const topics = convertToTopics(allItems.slice(0, 20));
 
   // キャッシュ更新
-  cache = { data: summarized, timestamp: Date.now() };
-  console.log(`[JapanNews] Done. ${summarized.length} items ready.`);
-  return summarized;
+  cache = { data: topics, timestamp: Date.now() };
+  console.log(`[JapanNews] Done. ${topics.length} items ready (zero-cost).`);
+  return topics;
 }
 
 // フォールバック（RSS 取得失敗時）

@@ -14,6 +14,12 @@ interface TopicData {
   score?: number;
   commentCount?: number;
   description?: string;
+  // Video fields
+  videoId?: string;
+  videoType?: 'youtube' | 'tiktok';
+  thumbnail?: string;
+  views?: string;
+  duration?: string;
 }
 
 /**
@@ -32,6 +38,12 @@ function convertToTopic(data: TopicData, category: Category): Topic {
     sourceUrl: data.sourceUrl,
     publishedAt: new Date(data.timestamp).toISOString(),
     tags: [data.source.toLowerCase()],
+    // Video fields (pass through for SOCIAL)
+    videoId: data.videoId,
+    videoType: data.videoType,
+    thumbnail: data.thumbnail,
+    views: data.views,
+    duration: data.duration,
   };
 }
 

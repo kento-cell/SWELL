@@ -1,178 +1,362 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View, Image, useWindowDimensions } from 'react-native';
-import { VideoData } from '@/server/api/data-router';
+/**
+ * VideoCard — SOCIAL カテゴリ用の動画カードコンポーネント
+ *
+ * YouTube: WebView で iframe 埋め込み再生（アプリ内）
+ * TikTok: サムネイル表示 → タップで外部ブラウザ（TikTok は iframe 埋め込み不可）
+ */
+
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+import * as WebBrowser from 'expo-web-browser';
+import * as Haptics from 'expo-haptics';
+import { Topic } from '@/lib/types';
+import { useThemeContext } from '@/lib/theme-provider';
 
 interface VideoCardProps {
-  video: VideoData;
-  onPress: () => void;
+  topic: Topic;
+  cardWidth: number;
 }
 
-export function VideoCard({ video, onPress }: VideoCardProps) {
-  const { width } = useWindowDimensions();
-  const cardWidth = Math.min(width - 32, 400);
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const VIDEO_HEIGHT = Math.min(SCREEN_HEIGHT * 0.28, 220);
+
+/**
+ * YouTube iframe HTML for WebView
+ */
+function buildYouTubeHTML(videoId: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    .container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+    iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <iframe
+      src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  </div>
+</body>
+</html>`;
+}
+
+export function VideoCard({ topic, cardWidth }: VideoCardProps) {
+  const { themeConfig } = useThemeContext();
+  const tc = themeConfig.colors;
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const isYouTube = topic.videoType === 'youtube';
+  const isTikTok = topic.videoType === 'tiktok';
+
+  const handlePress = async () => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    if (isYouTube && topic.videoId) {
+      // YouTube: toggle WebView player
+      setIsPlaying((prev) => !prev);
+    } else if (topic.sourceUrl) {
+      // TikTok or fallback: open in browser
+      await WebBrowser.openBrowserAsync(topic.sourceUrl);
+    }
+  };
+
+  const waveColor = getWaveColor(topic.waveSentiment);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.pressed]}
-    >
-      {/* Thumbnail */}
-      <View style={[styles.thumbnailContainer, { width: cardWidth - 2 }]}>
-        {video.thumbnail ? (
-          <Image
-            source={{ uri: video.thumbnail }}
-            style={styles.thumbnail}
-            resizeMode="cover"
+    <View style={[
+      styles.card,
+      {
+        backgroundColor: tc.surface,
+        borderColor: tc.border,
+        borderRadius: themeConfig.borderRadius.sm,
+        width: cardWidth,
+      },
+    ]}>
+      {/* Video area */}
+      <View style={[styles.videoArea, { height: VIDEO_HEIGHT }]}>
+        {isPlaying && isYouTube && topic.videoId ? (
+          // YouTube WebView player
+          <WebView
+            source={{ html: buildYouTubeHTML(topic.videoId) }}
+            style={styles.webView}
+            allowsInlineMediaPlayback
+            mediaPlaybackRequiresUserAction={false}
+            javaScriptEnabled
+            domStorageEnabled
+            scrollEnabled={false}
           />
         ) : (
-          <View style={styles.placeholderThumbnail}>
-            <Text style={styles.placeholderText}>🎥</Text>
-          </View>
+          // Thumbnail with play button overlay
+          <Pressable
+            onPress={handlePress}
+            style={({ pressed }) => [styles.thumbnailContainer, pressed && { opacity: 0.85 }]}
+          >
+            {topic.thumbnail ? (
+              <Image
+                source={{ uri: topic.thumbnail }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.thumbnailPlaceholder, { backgroundColor: tc.background }]}>
+                <Text style={[styles.thumbnailPlaceholderIcon, { color: tc.muted }]}>
+                  {isYouTube ? '▶' : '♪'}
+                </Text>
+              </View>
+            )}
+
+            {/* Play button overlay */}
+            <View style={styles.playOverlay}>
+              <View style={[styles.playButton, {
+                backgroundColor: isYouTube ? 'rgba(255,0,0,0.9)' : 'rgba(0,0,0,0.85)',
+              }]}>
+                <Text style={styles.playIcon}>
+                  {isYouTube ? '▶' : '↗'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Duration badge */}
+            {topic.duration && (
+              <View style={styles.durationBadge}>
+                <Text style={styles.durationText}>{topic.duration}</Text>
+              </View>
+            )}
+
+            {/* Source badge */}
+            <View style={styles.sourceBadgeContainer}>
+              <View style={[styles.sourceBadge, {
+                backgroundColor: isYouTube ? '#FF0000' : '#000000',
+              }]}>
+                <Text style={styles.sourceBadgeText}>
+                  {isYouTube ? '▶ YouTube' : '♪ TikTok'}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
         )}
 
-        {/* Source badge */}
-        <View style={styles.sourceBadge}>
-          <Text style={styles.sourceBadgeText}>
-            {video.source === 'youtube' ? '▶ YouTube' : '🎵 TikTok'}
+        {/* Close button when playing */}
+        {isPlaying && (
+          <Pressable
+            onPress={() => setIsPlaying(false)}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Info area */}
+      <View style={styles.infoArea}>
+        {/* Title */}
+        <Text
+          style={[styles.title, { color: tc.foreground }]}
+          numberOfLines={2}
+        >
+          {topic.title}
+        </Text>
+
+        {/* Meta row */}
+        <View style={styles.metaRow}>
+          {topic.views && (
+            <Text style={[styles.metaText, { color: tc.muted }]}>
+              👁 {topic.views}
+            </Text>
+          )}
+          {isTikTok && (
+            <Text style={[styles.tiktokNote, { color: tc.muted }]}>
+              ↗ タップで開く
+            </Text>
+          )}
+        </View>
+
+        {/* Wave indicator */}
+        <View style={styles.waveRow}>
+          <View style={[styles.waveDot, { backgroundColor: waveColor }]} />
+          <Text style={[styles.waveText, { color: tc.muted }]}>
+            {getWaveLabel(topic.waveLevel)} · {getSentimentLabel(topic.waveSentiment)}
           </Text>
         </View>
-
-        {/* Duration (if available) */}
-        {video.duration && (
-          <View style={styles.durationBadge}>
-            <Text style={styles.durationText}>{video.duration}</Text>
-          </View>
-        )}
       </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        {/* Title */}
-        <Text style={styles.title} numberOfLines={2}>
-          {video.title}
-        </Text>
-
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>👁</Text>
-            <Text style={styles.statValue}>{video.views}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>❤</Text>
-            <Text style={styles.statValue}>{video.likes}</Text>
-          </View>
-        </View>
-
-        {/* Description */}
-        <Text style={styles.description} numberOfLines={2}>
-          {video.description}
-        </Text>
-
-        {/* Tap hint */}
-        <Text style={styles.tapHint}>タップで動画を開く →</Text>
-      </View>
-    </Pressable>
+    </View>
   );
+}
+
+function getWaveColor(sentiment: string): string {
+  switch (sentiment) {
+    case 'green': return '#10B981';
+    case 'yellow': return '#F59E0B';
+    case 'red': return '#EF4444';
+    default: return '#3B82F6';
+  }
+}
+
+function getWaveLabel(level: string): string {
+  switch (level) {
+    case 'high': return '高波';
+    case 'low': return '小波';
+    default: return '通常波';
+  }
+}
+
+function getSentimentLabel(sentiment: string): string {
+  switch (sentiment) {
+    case 'green': return '好意的';
+    case 'yellow': return '賛否割れ';
+    case 'red': return '炎上';
+    default: return '中立';
+  }
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#374151',
+    overflow: 'hidden',
+    marginBottom: 4,
   },
-  pressed: {
-    opacity: 0.7,
+  videoArea: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: '#000',
   },
   thumbnailContainer: {
+    flex: 1,
     position: 'relative',
-    height: 180,
-    backgroundColor: '#111827',
   },
   thumbnail: {
     width: '100%',
     height: '100%',
   },
-  placeholderThumbnail: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
+  thumbnailPlaceholder: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#374151',
+    justifyContent: 'center',
   },
-  placeholderText: {
+  thumbnailPlaceholderIcon: {
     fontSize: 48,
   },
-  sourceBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sourceBadgeText: {
-    color: '#ECEDEE',
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'monospace',
+  playButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    color: '#fff',
+    fontSize: 20,
+    marginLeft: 2,
   },
   durationBadge: {
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   durationText: {
-    color: '#ECEDEE',
+    color: '#fff',
     fontSize: 11,
-    fontWeight: '600',
     fontFamily: 'monospace',
   },
-  content: {
+  sourceBadgeContainer: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+  },
+  sourceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 2,
+  },
+  sourceBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  infoArea: {
     padding: 12,
-    gap: 8,
+    gap: 6,
   },
   title: {
-    color: '#ECEDEE',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     lineHeight: 18,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-  },
-  statValue: {
-    color: '#9BA1A6',
-    fontSize: 12,
     fontFamily: 'monospace',
   },
-  description: {
-    color: '#9BA1A6',
-    fontSize: 12,
-    lineHeight: 16,
+  metaRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
-  tapHint: {
-    color: '#687076',
+  metaText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+  },
+  tiktokNote: {
     fontSize: 10,
     fontFamily: 'monospace',
-    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  waveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  waveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 0,
+  },
+  waveText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
   },
 });

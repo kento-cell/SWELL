@@ -20,6 +20,12 @@ export interface Topic {
   sourceUrl?: string;    // 元記事URL（モックでは空）
   publishedAt: string;   // ISO 8601
   tags: string[];
+  // 動画コンテンツ（SOCIAL カテゴリ用）
+  videoId?: string;       // YouTube video ID または TikTok aweme_id
+  videoType?: 'youtube' | 'tiktok';
+  thumbnail?: string;    // サムネイル画像URL
+  views?: string;        // 再生数
+  duration?: string;     // 動画長さ
 }
 
 export type PlanType = 'free' | 'premium';

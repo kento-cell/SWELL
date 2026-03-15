@@ -17,6 +17,12 @@ export interface TopicData {
   score?: number;
   commentCount?: number;
   description?: string;
+  // Video fields (SOCIAL category)
+  videoId?: string;
+  videoType?: 'youtube' | 'tiktok';
+  thumbnail?: string;
+  views?: string;
+  duration?: string;
 }
 
 export interface CategoryData {
@@ -315,6 +321,12 @@ export async function fetchVideosData(): Promise<CategoryData> {
       waveSentiment: 'green' as const,
       timestamp: new Date(video.publishedAt).getTime(),
       description: video.description,
+      // Pass video metadata for embedding
+      videoId: video.id,
+      videoType: video.source as 'youtube' | 'tiktok',
+      thumbnail: video.thumbnail,
+      views: video.views,
+      duration: video.duration,
     }));
 
     const result: CategoryData = {
