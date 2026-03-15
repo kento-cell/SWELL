@@ -60,35 +60,24 @@ export default function HomeScreen() {
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
     setCurrentIndex(0);
-    flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
   };
 
   const showLoadingIndicator = isLoading && realtimeTopics.length === 0;
 
   const handlePrev = () => {
-    if (currentIndex <= 0) {
-      const newIndex = topics.length - 1;
-      setCurrentIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-    } else {
-      const newIndex = currentIndex - 1;
-      setCurrentIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-    }
+    const newIndex = currentIndex <= 0 ? topics.length - 1 : currentIndex - 1;
+    setCurrentIndex(newIndex);
+    scrollToCard(newIndex);
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
   const handleNext = () => {
-    if (currentIndex >= topics.length - 1) {
-      setCurrentIndex(0);
-      flatListRef.current?.scrollToIndex({ index: 0, animated: true });
-    } else {
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      flatListRef.current?.scrollToIndex({ index: newIndex, animated: true });
-    }
+    const newIndex = currentIndex >= topics.length - 1 ? 0 : currentIndex + 1;
+    setCurrentIndex(newIndex);
+    scrollToCard(newIndex);
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -109,6 +98,15 @@ export default function HomeScreen() {
   const dataSource = realtimeTopics.length > 0 ? source : 'モックデータ';
 
   const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
+  const ITEM_WIDTH = CARD_WIDTH + 16; // card width + marginHorizontal * 2
+
+  // Scroll to a specific index using offset (more reliable than scrollToIndex)
+  const scrollToCard = (index: number) => {
+    flatListRef.current?.scrollToOffset({
+      offset: index * ITEM_WIDTH,
+      animated: true,
+    });
+  };
 
   useEffect(() => {
     if (realtimeTopics.length > 0) {
@@ -139,7 +137,7 @@ export default function HomeScreen() {
           const idx = categoryTopics.findIndex((t) => t.id === topic.id);
           if (idx >= 0) {
             setCurrentIndex(idx);
-            flatListRef.current?.scrollToIndex({ index: idx, animated: true });
+            scrollToCard(idx);
           }
         }}
       />
@@ -181,7 +179,7 @@ export default function HomeScreen() {
               decelerationRate="fast"
               contentContainerStyle={[
                 styles.flatListContent,
-                { paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2 },
+                // No paddingHorizontal — keeps offset calculation simple and predictable
               ]}
               onViewableItemsChanged={onViewableItemsChanged}
               viewabilityConfig={viewabilityConfig}

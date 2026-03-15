@@ -206,3 +206,6 @@
 - [x] TikTok サムネイル表示→ブラウザで開く実装
 - [x] SOCIALタブに VideoCard コンポーネント実装
 - [x] YouTube はアプリ内インライン再生、TikTok は外部ブラウザで開く
+
+## バグ修正
+- [x] ホーム画面の矢印ボタンを押しても次のカードに移動しない（scrollToIndex→scrollToOffsetに変更）
