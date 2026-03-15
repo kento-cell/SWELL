@@ -10,18 +10,22 @@ import { PixelText } from '@/components/pixel-text';
 import { PixelButton } from '@/components/pixel-button';
 import { MOCK_TOPICS } from '@/lib/mock-data';
 import { WAVE_LEVEL_LABEL, WAVE_SENTIMENT_LABEL } from '@/lib/types';
+import { useTopicContext } from '@/lib/topic-context';
 
 export default function TopicDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { selectedTopic } = useTopicContext();
 
-  const topic = MOCK_TOPICS.find((t) => t.id === id);
+  // Try to use selectedTopic from context first, then fall back to MOCK_TOPICS
+  const topic = selectedTopic || MOCK_TOPICS.find((t) => t.id === id);
 
   if (!topic) {
     return (
       <ScreenContainer>
         <View style={styles.notFound}>
           <PixelText variant="body" color="muted">トピックが見つかりません</PixelText>
+          <PixelText variant="body" color="muted" style={{ marginTop: 8, fontSize: 12 }}>ID: {id}</PixelText>
           <PixelButton label="← 戻る" onPress={() => router.back()} variant="secondary" />
         </View>
       </ScreenContainer>
@@ -80,20 +84,21 @@ export default function TopicDetailScreen() {
           </View>
         </View>
 
-        {/* Detail text */}
-        <PixelText variant="body" color="secondary">{topic.detail}</PixelText>
+        {/* Description */}
+        {topic.detail && (
+          <View style={styles.descriptionCard}>
+            <PixelText variant="body" color="primary">
+              {topic.detail}
+            </PixelText>
+          </View>
+        )}
 
-        {/* Tags */}
-        <View style={styles.tagRow}>
-          {topic.tags.map((tag) => (
-            <View key={tag} style={styles.tag}>
-              <PixelText variant="caption" color="muted">#{tag}</PixelText>
-            </View>
-          ))}
-        </View>
-
-        {/* Source link */}
-        <OpenSourceButton url={topic.sourceUrl} label={`${topic.source}で読む`} />
+        {/* Open Source Button */}
+        {topic.sourceUrl && (
+          <View style={styles.buttonContainer}>
+            <OpenSourceButton url={topic.sourceUrl} />
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -102,129 +107,59 @@ export default function TopicDetailScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
-  },
-  backBtn: {
-    padding: 4,
-  },
-  backBtnText: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontFamily: 'monospace',
+    borderBottomColor: '#334155',
   },
   categoryBadge: {
-    backgroundColor: '#1F2937',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 2,
-  },
-  categoryText: {
-    color: '#6B7280',
-    fontSize: 10,
-    fontFamily: 'monospace',
-    letterSpacing: 2,
+    backgroundColor: '#1e2022',
+    borderRadius: 4,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    paddingVertical: 16,
     gap: 16,
-    paddingBottom: 40,
   },
   waveArea: {
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#1F2937',
-    alignSelf: 'center',
-    width: '100%',
+    alignItems: 'center',
+    marginVertical: 8,
   },
   metaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   publishedAt: {
-    color: '#4B5563',
-    fontSize: 10,
-    fontFamily: 'monospace',
-  },
-  title: {
-    color: '#E8EDF5',
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 30,
-    letterSpacing: -0.3,
+    fontSize: 12,
+    color: '#687076',
   },
   legendCard: {
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#1F2937',
-    borderRadius: 4,
-    padding: 14,
-    gap: 10,
-  },
-  legendCardTitle: {
-    color: '#6B7280',
-    fontSize: 10,
-    fontFamily: 'monospace',
-    letterSpacing: 1,
+    backgroundColor: '#1e2022',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
   },
   legendDetail: {
-    marginTop: 4,
+    marginTop: 8,
   },
-  legendDetailText: {
-    color: '#6B7280',
-    fontSize: 12,
-    lineHeight: 20,
+  descriptionCard: {
+    backgroundColor: '#1e2022',
+    padding: 12,
+    borderRadius: 8,
   },
-  highlight: {
-    color: '#9CA3AF',
-    fontWeight: '600',
+  buttonContainer: {
+    paddingVertical: 8,
   },
-  detail: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    lineHeight: 24,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: '#1F2937',
-    borderRadius: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  tagText: {
-    color: '#6B7280',
-    fontSize: 11,
-    fontFamily: 'monospace',
-  },
-
   notFound: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
-  },
-  notFoundText: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
-  backButton: {
-    padding: 12,
-  },
-  backButtonText: {
-    color: '#3B82F6',
-    fontSize: 14,
   },
 });

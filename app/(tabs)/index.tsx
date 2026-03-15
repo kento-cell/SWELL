@@ -26,6 +26,7 @@ import { usePlan } from '@/lib/plan-context';
 import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
 import { Category, FREE_CATEGORIES } from '@/lib/types';
 import { useCategoryData } from '@/hooks/use-real-time-data';
+import { useTopicContext } from '@/lib/topic-context';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -33,6 +34,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function HomeScreen() {
   const router = useRouter();
   const { plan, tutorialDone } = usePlan();
+  const { setSelectedTopic } = useTopicContext();
   const [activeCategory, setActiveCategory] = useState<Category>('NEWS');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
@@ -165,7 +167,10 @@ export default function HomeScreen() {
               <View style={{ width: CARD_WIDTH, marginHorizontal: 8 }}>
                 <TopicCard
                   topic={item}
-                  onPress={() => router.push({ pathname: '/topic/[id]', params: { id: item.id } })}
+                  onPress={() => {
+                    setSelectedTopic(item);
+                    router.push({ pathname: '/topic/[id]', params: { id: item.id } });
+                  }}
                 />
               </View>
             )}
