@@ -26,9 +26,9 @@ import { PremiumSheet } from '@/components/premium-sheet';
 import { WaveRankingWidget } from '@/components/wave-ranking-widget';
 import { PixelText } from '@/components/pixel-text';
 import { usePlan } from '@/lib/plan-context';
-import { getTopicsByCategory, MOCK_TOPICS } from '@/lib/mock-data';
+// mock-data kept for legacy reference only - not used in main flow
 import { Category, FREE_CATEGORIES, Topic } from '@/lib/types';
-import { useCategoryData } from '@/hooks/use-real-time-data';
+import { useCategoryData, useNewsData } from '@/hooks/use-real-time-data';
 import { useTopicContext } from '@/lib/topic-context';
 import { useLocalization } from '@/lib/localization-context';
 import { useThemeContext } from '@/lib/theme-provider';
@@ -49,11 +49,11 @@ export default function HomeScreen() {
 
   // Fetch real-time data from server (includes videos for SOCIAL)
   const { topics: realtimeTopics, isLoading, error, source } = useCategoryData(activeCategory);
+  // Always fetch NEWS topics for wave ranking widget (independent of active category)
+  const { topics: newsTopics } = useNewsData();
 
-  // Determine displayed topics - real-time data or fallback to mock
-  const topics: Topic[] = realtimeTopics.length > 0
-    ? realtimeTopics
-    : getTopicsByCategory(activeCategory);
+  // Use real-time data only; show empty list while loading (no mock fallback)
+  const topics: Topic[] = realtimeTopics;
 
   const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory);
 
@@ -95,12 +95,11 @@ export default function HomeScreen() {
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const currentTopic = topics[currentIndex];
-  const dataSource = realtimeTopics.length > 0 ? source : 'モックデータ';
+  const dataSource = realtimeTopics.length > 0 ? source : isLoading ? '取得中...' : 'オフライン';
 
   const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
-  const ITEM_WIDTH = CARD_WIDTH + 16; // card + marginHorizontal*2
-  // With paddingHorizontal=SIDE_PAD on contentContainer, page 0 offset=0, page N offset=N*ITEM_WIDTH
-  const SIDE_PAD = (SCREEN_WIDTH - CARD_WIDTH) / 2 - 8;
+  const ITEM_WIDTH = CARD_WIDTH + 16; // card + marginHorizontal*2 (8 each side)
+  // No paddingHorizontal on contentContainer: offset = index * ITEM_WIDTH exactly
 
   // Scroll to a specific index
   const scrollToCard = (index: number) => {
@@ -132,11 +131,10 @@ export default function HomeScreen() {
 
       {/* Wave Ranking Widget */}
       <WaveRankingWidget
-        topics={MOCK_TOPICS}
+        topics={newsTopics}
         onTopicPress={(topic) => {
-          setActiveCategory(topic.category);
-          const categoryTopics = getTopicsByCategory(topic.category);
-          const idx = categoryTopics.findIndex((t) => t.id === topic.id);
+          setActiveCategory('NEWS');
+          const idx = newsTopics.findIndex((t: Topic) => t.id === topic.id);
           if (idx >= 0) {
             setCurrentIndex(idx);
             scrollToCard(idx);
@@ -178,10 +176,7 @@ export default function HomeScreen() {
               snapToInterval={ITEM_WIDTH}
               snapToAlignment="start"
               decelerationRate="fast"
-              contentContainerStyle={[
-                styles.flatListContent,
-                { paddingHorizontal: SIDE_PAD > 0 ? SIDE_PAD : 0 },
-              ]}
+              contentContainerStyle={styles.flatListContent}
               onViewableItemsChanged={onViewableItemsChanged}
               viewabilityConfig={viewabilityConfig}
               renderItem={({ item }) => {

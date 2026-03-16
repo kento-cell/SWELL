@@ -224,3 +224,10 @@
 - [x] SOCIALタブで実際のYouTube動画をVideoCardで表示
 - [x] WebViewでYouTube動画をアプリ内再生
 - [x] SOCIALタブで動画埋め込みが表示されない・動作しない（YouTube Data API v3導入で解決）
+## バグ修正・改善（2026-03-16 報告）
+- [x] 全カテゴリで矢印スクロールが動作しない（SIDE_PAD削除、paddingHorizontal除去でオフセット一致）
+- [x] 動画サムネイルが表示されない・再生できない（expo-imageに切り替え、cachePolicy追加）
+- [x] 波ランキングをニュースデータから生成する（MOCK_TOPICS→useNewsDataのリアルデータに変更）
+- [x] モックデータをメインフローから削除（ホーム画面・詳細画面のフォールバック削除）
+- [x] NEWSタップ時の要約処理を明確化・ドキュメント化（LOGIC.mdに記載）
+- [x] 波の色・大きさの決定ロジックをドキュメント化（LOGIC.mdに記載）

@@ -8,7 +8,6 @@ import { SourceBadge } from '@/components/source-badge';
 import { OpenSourceButton } from '@/components/open-source-button';
 import { PixelText } from '@/components/pixel-text';
 import { PixelButton } from '@/components/pixel-button';
-import { MOCK_TOPICS } from '@/lib/mock-data';
 import { WAVE_LEVEL_LABEL, WAVE_SENTIMENT_LABEL } from '@/lib/types';
 import { useTopicContext } from '@/lib/topic-context';
 import { useThemeContext } from '@/lib/theme-provider';
@@ -20,8 +19,8 @@ export default function TopicDetailScreen() {
   const { themeConfig } = useThemeContext();
   const tc = themeConfig.colors;
 
-  // Try to use selectedTopic from context first, then fall back to MOCK_TOPICS
-  const topic = selectedTopic || MOCK_TOPICS.find((t) => t.id === id);
+  // Use selectedTopic from context (set when user taps a card)
+  const topic = selectedTopic;
 
   if (!topic) {
     return (

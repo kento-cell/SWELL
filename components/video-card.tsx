@@ -8,13 +8,13 @@
 import React, { useState } from 'react';
 import {
   Dimensions,
-  Image,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { WebView } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
@@ -113,7 +113,9 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
               <Image
                 source={{ uri: topic.thumbnail }}
                 style={styles.thumbnail}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
               />
             ) : (
               <View style={[styles.thumbnailPlaceholder, { backgroundColor: tc.background }]}>
