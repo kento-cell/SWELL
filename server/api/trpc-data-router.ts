@@ -205,15 +205,8 @@ export const dataRouter = router({
             }
             break;
           case 'SOCIAL':
-            const socialData = await fetchSocialData();
-            const videosData = await fetchVideosData();
-            data = {
-              ...socialData,
-              items: [
-                ...(socialData.items || []),
-                ...(videosData.items || []),
-              ],
-            };
+            // SOCIALタブはYouTubeトレンド動画のみ表示（Medium記事は除外）
+            data = await fetchVideosData();
             break;
           case 'MARKET':
             data = await fetchMarketData();

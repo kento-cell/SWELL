@@ -311,17 +311,18 @@ export async function fetchVideosData(): Promise<CategoryData> {
   try {
     const videos = await fetchTrendingVideos('JP');
 
-    const items: TopicData[] = videos.map((video: any) => ({
-      id: video.id,
+    const items: TopicData[] = videos.map((video) => ({
+      // Use a prefixed ID to avoid collision with other data sources
+      id: `yt_${video.id}`,
       title: video.title,
       url: video.url,
       sourceUrl: video.url,
-      source: video.source,
+      source: video.channelTitle || video.source,
       waveLevel: 'medium' as const,
       waveSentiment: 'green' as const,
       timestamp: new Date(video.publishedAt).getTime(),
       description: video.description,
-      // Pass video metadata for embedding
+      // Video metadata for WebView embed — videoId is the raw YouTube video ID
       videoId: video.id,
       videoType: video.source as 'youtube' | 'tiktok',
       thumbnail: video.thumbnail,

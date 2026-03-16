@@ -210,3 +210,11 @@
 ## バグ修正
 - [x] ホーム画面の矢印ボタンを押しても次のカードに移動しない（scrollToIndex→scrollToOffsetに変更）
 - [x] 矢印ボタン押下でカード移動しない（pagingEnabled削除、snapToInterval+startに統一、オフセット計算修正）
+- [ ] SOCIALタブで動画埋め込みが表示されない・動作しない
+
+## YouTube Data API v3 統合
+- [x] YouTube APIキーをサーバー環境変数に設定
+- [x] video-client.ts を YouTube Data API v3 で書き直し（日本トレンド動画取得）
+- [x] SOCIALタブで実際のYouTube動画をVideoCardで表示
+- [x] WebViewでYouTube動画をアプリ内再生
+- [x] SOCIALタブで動画埋め込みが表示されない・動作しない（YouTube Data API v3導入で解決）

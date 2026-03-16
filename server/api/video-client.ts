@@ -1,9 +1,13 @@
-import { callDataApi } from '@/server/_core/dataApi';
-
 /**
- * Video Client
- * Fetches trending videos from YouTube and TikTok
+ * Video Client — YouTube Data API v3
+ *
+ * 日本のトレンド動画をYouTube Data API v3で取得します。
+ * APIキー: YOUTUBE_API_KEY 環境変数
+ * 無料枠: 1日10,000クォータ（videos.list = 1クォータ/リクエスト）
+ * 5分キャッシュで実質1日288リクエスト以下に抑制
  */
+
+const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
 export interface VideoItem {
   id: string;
@@ -16,129 +20,130 @@ export interface VideoItem {
   source: 'youtube' | 'tiktok';
   publishedAt: string;
   duration?: string;
+  channelTitle?: string;
 }
 
 /**
- * Fetch trending videos from YouTube
+ * ISO 8601 duration (PT4M13S) → "4:13" 形式に変換
  */
-export async function fetchYouTubeTrendingVideos(region: string = 'JP'): Promise<VideoItem[]> {
-  try {
-    const result: any = await callDataApi('Youtube/search', {
-      query: {
-        q: 'trending',
-        gl: region,
-        hl: region === 'JP' ? 'ja' : 'en',
-      },
-    });
+function parseDuration(iso: string): string {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return '';
+  const h = parseInt(match[1] || '0');
+  const m = parseInt(match[2] || '0');
+  const s = parseInt(match[3] || '0');
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
-    if (!result || !result.contents) {
-      console.warn('No YouTube results found');
+/**
+ * 再生回数を "1.2M回" 形式にフォーマット
+ */
+function formatViewCount(count: string): string {
+  const n = parseInt(count || '0');
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M回`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K回`;
+  return `${n}回`;
+}
+
+/**
+ * YouTube Data API v3 で日本のトレンド動画を取得
+ */
+export async function fetchYouTubeTrendingVideos(
+  regionCode: string = 'JP',
+  maxResults: number = 20,
+): Promise<VideoItem[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    console.warn('[VideoClient] YOUTUBE_API_KEY not set');
+    return [];
+  }
+
+  try {
+    // Step 1: mostPopular チャートから動画IDリストを取得
+    const listUrl = new URL(`${YOUTUBE_API_BASE}/videos`);
+    listUrl.searchParams.set('part', 'snippet,contentDetails,statistics');
+    listUrl.searchParams.set('chart', 'mostPopular');
+    listUrl.searchParams.set('regionCode', regionCode);
+    listUrl.searchParams.set('maxResults', String(maxResults));
+    listUrl.searchParams.set('hl', 'ja');
+    listUrl.searchParams.set('key', apiKey);
+
+    const res = await fetch(listUrl.toString());
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('[VideoClient] YouTube API error:', err);
       return [];
     }
 
-    const videos: VideoItem[] = [];
+    const data = await res.json() as {
+      items?: Array<{
+        id: string;
+        snippet: {
+          title: string;
+          description: string;
+          channelTitle: string;
+          publishedAt: string;
+          thumbnails: {
+            maxres?: { url: string };
+            high?: { url: string };
+            medium?: { url: string };
+          };
+        };
+        contentDetails: { duration: string };
+        statistics: { viewCount?: string; likeCount?: string };
+      }>;
+    };
 
-    for (const content of result.contents.slice(0, 10)) {
-      if (content.type === 'video' && content.video) {
-        const video = content.video;
-        videos.push({
-          id: video.videoId || '',
-          title: video.title || 'Untitled',
-          description: video.descriptionSnippet || '',
-          thumbnail: video.videoId ? `https://i.ytimg.com/vi/${video.videoId}/hqdefault.jpg` : '',
-          url: `https://www.youtube.com/watch?v=${video.videoId}`,
-          views: video.viewCountText || '0 views',
-          likes: '0 likes', // YouTube API doesn't provide likes in search results
-          source: 'youtube',
-          publishedAt: new Date().toISOString(),
-          duration: video.lengthText || '',
-        });
-      }
+    if (!data.items || data.items.length === 0) {
+      console.warn('[VideoClient] No trending videos found');
+      return [];
     }
 
+    const videos: VideoItem[] = data.items.map((item) => {
+      const thumb =
+        item.snippet.thumbnails.maxres?.url ||
+        item.snippet.thumbnails.high?.url ||
+        item.snippet.thumbnails.medium?.url ||
+        `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`;
+
+      return {
+        id: item.id,
+        title: item.snippet.title,
+        description: item.snippet.description?.slice(0, 200) || '',
+        thumbnail: thumb,
+        url: `https://www.youtube.com/watch?v=${item.id}`,
+        views: formatViewCount(item.statistics.viewCount || '0'),
+        likes: formatViewCount(item.statistics.likeCount || '0'),
+        source: 'youtube',
+        publishedAt: item.snippet.publishedAt,
+        duration: parseDuration(item.contentDetails.duration),
+        channelTitle: item.snippet.channelTitle,
+      };
+    });
+
+    console.log(`[VideoClient] Fetched ${videos.length} trending videos from YouTube (${regionCode})`);
     return videos;
   } catch (error) {
-    console.error('Error fetching YouTube trending videos:', error);
+    console.error('[VideoClient] Error fetching YouTube trending videos:', error);
     return [];
   }
 }
 
 /**
- * Fetch trending videos from TikTok
- */
-export async function fetchTikTokTrendingVideos(keyword: string = 'trending'): Promise<VideoItem[]> {
-  try {
-    const result: any = await callDataApi('Tiktok/search_tiktok_video_general', {
-      query: {
-        keyword,
-      },
-    });
-
-    if (!result || !result.data) {
-      console.warn('No TikTok results found');
-      return [];
-    }
-
-    const videos: VideoItem[] = [];
-
-    for (const video of result.data.slice(0, 10)) {
-      const videoData = video.video || {};
-      const stats = video.statistics || {};
-
-      videos.push({
-        id: video.aweme_id || '',
-        title: video.desc?.slice(0, 100) || 'TikTok Video',
-        description: video.desc || '',
-        thumbnail: videoData.cover?.url || '',
-        url: `https://www.tiktok.com/@${video.author?.unique_id}/video/${video.aweme_id}`,
-        views: formatNumber(stats.play_count || 0),
-        likes: formatNumber(stats.digg_count || 0),
-        source: 'tiktok',
-        publishedAt: new Date(
-          (video.create_time || Math.floor(Date.now() / 1000)) * 1000,
-        ).toISOString(),
-      });
-    }
-
-    return videos;
-  } catch (error) {
-    console.error('Error fetching TikTok trending videos:', error);
-    return [];
-  }
-}
-
-/**
- * Fetch combined trending videos (YouTube + TikTok)
+ * 統合エントリポイント（将来的にTikTok等を追加可能）
  */
 export async function fetchTrendingVideos(region: string = 'JP'): Promise<VideoItem[]> {
-  try {
-    const [youtubeVideos, tiktokVideos] = await Promise.all([
-      fetchYouTubeTrendingVideos(region),
-      fetchTikTokTrendingVideos('トレンド'), // Japanese keyword for trending
-    ]);
-
-    // Combine and sort by recency
-    const allVideos = [...youtubeVideos, ...tiktokVideos];
-    allVideos.sort(
-      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-    );
-
-    return allVideos.slice(0, 20); // Return top 20 videos
-  } catch (error) {
-    console.error('Error fetching trending videos:', error);
-    return [];
-  }
+  return fetchYouTubeTrendingVideos(region, 20);
 }
 
 /**
- * Format large numbers (e.g., 1000000 -> 1M)
+ * 数値フォーマット（後方互換）
  */
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
+export function formatNumber(num: number): string {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return num.toString();
 }
