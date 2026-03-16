@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { usePlan } from '@/lib/plan-context';
 import { useThemeContext } from '@/lib/theme-provider';
@@ -84,7 +84,13 @@ export function Tutorial() {
   };
 
   return (
-    <View style={[styles.overlay, { backgroundColor: `${tc.background}F2` }]}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+    >
+      <View style={[styles.overlay, { backgroundColor: `${tc.background}F2` }]}>
       <View style={[styles.card, { backgroundColor: tc.surface, borderColor: tc.border, borderRadius: themeConfig.borderRadius.sm }]}>
         {/* Step indicator */}
         <View style={styles.stepRow}>
@@ -136,16 +142,16 @@ export function Tutorial() {
           </Pressable>
         </View>
       </View>
-    </View>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 100,
     padding: 24,
   },
   card: {

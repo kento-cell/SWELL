@@ -60,6 +60,26 @@ async function startServer() {
     res.json({ ok: true, timestamp: Date.now() });
   });
 
+  // Image proxy for YouTube thumbnails (avoids CORS/CSP issues in preview)
+  app.get("/api/image-proxy", async (req, res) => {
+    const url = req.query.url as string;
+    if (!url || !url.startsWith('https://i.ytimg.com/')) {
+      res.status(400).json({ error: 'Invalid URL' });
+      return;
+    }
+    try {
+      const response = await fetch(url);
+      if (!response.ok) { res.status(response.status).end(); return; }
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch {
+      res.status(500).json({ error: 'Proxy failed' });
+    }
+  });
+
   app.use(
     "/api/trpc",
     createExpressMiddleware({

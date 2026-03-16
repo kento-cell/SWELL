@@ -215,13 +215,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Navigation Controls */}
+        {/* Navigation Controls - outside cardArea so LockOverlay cannot block it */}
         {!showLoadingIndicator && (
-          <View style={styles.navRow}>
+          <View style={[styles.navRow, { zIndex: 20 }]}>
             <PixelArrow
               direction="left"
               onPress={handlePrev}
-              locked={isLocked}
+              disabled={topics.length === 0}
               size={36}
             />
             <PageIndicator
@@ -237,7 +237,7 @@ export default function HomeScreen() {
             <PixelArrow
               direction="right"
               onPress={handleNext}
-              locked={isLocked}
+              disabled={topics.length === 0}
               size={36}
             />
           </View>

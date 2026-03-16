@@ -21,6 +21,15 @@ import * as Haptics from 'expo-haptics';
 import { Topic } from '@/lib/types';
 import { useThemeContext } from '@/lib/theme-provider';
 
+// Use server proxy for thumbnails to avoid CORS/CSP issues in web preview
+function getProxiedThumbnail(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  if (Platform.OS === 'web') {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
 interface VideoCardProps {
   topic: Topic;
   cardWidth: number;
@@ -111,7 +120,7 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
           >
             {topic.thumbnail ? (
               <Image
-                source={{ uri: topic.thumbnail }}
+                source={{ uri: getProxiedThumbnail(topic.thumbnail) }}
                 style={styles.thumbnail}
                 contentFit="cover"
                 cachePolicy="memory-disk"
