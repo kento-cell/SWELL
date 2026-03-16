@@ -212,6 +212,12 @@
 - [x] 矢印ボタン押下でカード移動しない（pagingEnabled削除、snapToInterval+startに統一、オフセット計算修正）
 - [ ] SOCIALタブで動画埋め込みが表示されない・動作しない
 
+## ドキュメント整備
+- [x] CONTEXT.md 作成（アーキテクチャ・ファイル構造・制約参照）
+- [x] LATEST.md 作成（最新実装状態スナップショット）
+- [x] SESSION.md 作成（AI作業プロトコル・クレジットエコ化ルール）
+- [x] PLAN.md 作成（人間が編集する開発ロードマップ）
+
 ## YouTube Data API v3 統合
 - [x] YouTube APIキーをサーバー環境変数に設定
 - [x] video-client.ts を YouTube Data API v3 で書き直し（日本トレンド動画取得）
