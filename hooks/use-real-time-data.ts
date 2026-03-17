@@ -49,9 +49,11 @@ function convertToTopic(data: TopicData, category: Category): Topic {
 
 /**
  * Hook to fetch real-time NEWS data
+ * Uses getByCategory('NEWS') to ensure Japanese news (NHK/Asahi) is prioritized
+ * This keeps wave ranking widget consistent with the main NEWS card feed
  */
 export function useNewsData() {
-  const query = trpc.data.getNews.useQuery(undefined, {
+  const query = trpc.data.getByCategory.useQuery('NEWS', {
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
     staleTime: 5 * 60 * 1000,
   });

@@ -20,12 +20,15 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Haptics from 'expo-haptics';
 import { Topic } from '@/lib/types';
 import { useThemeContext } from '@/lib/theme-provider';
+import { getApiBaseUrl } from '@/constants/oauth';
 
 // Use server proxy for thumbnails to avoid CORS/CSP issues in web preview
+// Must use absolute URL (getApiBaseUrl returns 3000-xxx domain) to avoid hitting Metro (8081)
 function getProxiedThumbnail(url: string | undefined): string | undefined {
   if (!url) return undefined;
   if (Platform.OS === 'web') {
-    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    const apiBase = getApiBaseUrl();
+    return `${apiBase}/api/image-proxy?url=${encodeURIComponent(url)}`;
   }
   return url;
 }
