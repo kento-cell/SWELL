@@ -190,7 +190,7 @@ async function fetchFeed(url: string, source: string): Promise<RawNewsItem[]> {
         'User-Agent': 'Mozilla/5.0 (compatible; SwellNewsBot/1.0)',
         Accept: 'application/rss+xml, application/xml, text/xml, */*',
       },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(3000), // 6秒 → 3秒に短縮
     });
 
     if (!response.ok) {
@@ -238,9 +238,9 @@ function convertToTopics(items: RawNewsItem[]): Topic[] {
   });
 }
 
-// キャッシュ（10分 — LLM不使用なので少し長めに）
+// キャッシュ（5分 — 高速ロード優先）
 let cache: { data: Topic[]; timestamp: number } | null = null;
-const CACHE_TTL = 10 * 60 * 1000;
+const CACHE_TTL = 5 * 60 * 1000;
 
 /**
  * メイン関数: 日本語ニュースを取得してキーワード分析（コスト0）
@@ -254,17 +254,30 @@ export async function fetchJapaneseNews(): Promise<Topic[]> {
 
   console.log('[JapanNews] Fetching from RSS feeds (zero-cost mode)...');
 
-  // 全フィードを並列取得
-  const feedResults = await Promise.allSettled(
-    JAPAN_NEWS_FEEDS.map((feed) => fetchFeed(feed.url, feed.source))
+  // 最速フィード取得（NHK優先）+ 他フィードは並列取得
+  const nhkFeed = JAPAN_NEWS_FEEDS.find(f => f.source === 'NHK');
+  const otherFeeds = JAPAN_NEWS_FEEDS.filter(f => f.source !== 'NHK');
+  
+  // NHKを最初に取得（最も高速）
+  let nhkItems: RawNewsItem[] = [];
+  if (nhkFeed) {
+    nhkItems = await fetchFeed(nhkFeed.url, nhkFeed.source);
+  }
+  
+  // 他のフィードは並列取得
+  const otherResults = await Promise.allSettled(
+    otherFeeds.map((feed) => fetchFeed(feed.url, feed.source))
   );
-
-  const allItems: RawNewsItem[] = [];
-  feedResults.forEach((result) => {
+  
+  // 結果を統合
+  const allItems: RawNewsItem[] = [...nhkItems];
+  otherResults.forEach((result) => {
     if (result.status === 'fulfilled') {
       allItems.push(...result.value);
     }
   });
+
+
 
   console.log(`[JapanNews] Total items fetched: ${allItems.length}`);
 

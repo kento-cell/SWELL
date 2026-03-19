@@ -51,11 +51,13 @@ function convertToTopic(data: TopicData, category: Category): Topic {
  * Hook to fetch real-time NEWS data
  * Uses getByCategory('NEWS') to ensure Japanese news (NHK/Asahi) is prioritized
  * This keeps wave ranking widget consistent with the main NEWS card feed
+ * Optimized: staleTime=10min, gcTime=15min for faster initial load
  */
 export function useNewsData() {
   const query = trpc.data.getByCategory.useQuery('NEWS', {
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes (reduced from 5)
+    staleTime: 10 * 60 * 1000, // Stale time 10 minutes
+    gcTime: 15 * 60 * 1000, // Cache time 15 minutes (TanStack Query v5 uses gcTime instead of cacheTime)
   });
 
   const topics = query.data?.data?.items?.map((item) => convertToTopic(item, 'NEWS')) || [];
@@ -73,8 +75,9 @@ export function useNewsData() {
  */
 export function useSocialData() {
   const query = trpc.data.getSocial.useQuery(undefined, {
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const topics = query.data?.data?.items?.map((item) => convertToTopic(item, 'SOCIAL')) || [];
@@ -92,8 +95,9 @@ export function useSocialData() {
  */
 export function useMarketData() {
   const query = trpc.data.getMarket.useQuery(undefined, {
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const topics = query.data?.data?.items?.map((item) => convertToTopic(item, 'MARKET')) || [];
