@@ -65,6 +65,9 @@ export default function HomeScreen() {
 
   const showLoadingIndicator = isLoading && realtimeTopics.length === 0;
 
+  const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
+  const ITEM_WIDTH = CARD_WIDTH + 16; // card + marginHorizontal*2 (8 each side)
+
   const handlePrev = () => {
     const newIndex = currentIndex <= 0 ? topics.length - 1 : currentIndex - 1;
     setCurrentIndex(newIndex);
@@ -92,13 +95,22 @@ export default function HomeScreen() {
     [],
   );
 
+  // Sync page indicator when momentum scroll ends
+  const onMomentumScrollEnd = useCallback(
+    (event: any) => {
+      const contentOffsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(contentOffsetX / ITEM_WIDTH);
+      if (index >= 0 && index < topics.length) {
+        setCurrentIndex(index);
+      }
+    },
+    [ITEM_WIDTH, topics.length],
+  );
+
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const currentTopic = topics[currentIndex];
   const dataSource = realtimeTopics.length > 0 ? source : isLoading ? '取得中...' : 'オフライン';
-
-  const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
-  const ITEM_WIDTH = CARD_WIDTH + 16; // card + marginHorizontal*2 (8 each side)
   // No paddingHorizontal on contentContainer: offset = index * ITEM_WIDTH exactly
 
   // Scroll to a specific index
@@ -178,6 +190,7 @@ export default function HomeScreen() {
               decelerationRate="fast"
               contentContainerStyle={styles.flatListContent}
               onViewableItemsChanged={onViewableItemsChanged}
+              onMomentumScrollEnd={onMomentumScrollEnd}
               viewabilityConfig={viewabilityConfig}
               renderItem={({ item }) => {
                 // SOCIAL カテゴリで動画データがある場合は VideoCard を使用
