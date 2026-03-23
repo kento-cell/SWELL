@@ -69,11 +69,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+    pointerEvents: 'box-none',
   },
   content: {
     alignItems: 'center',
     gap: 12,
     padding: 32,
+    pointerEvents: 'auto',
   },
   title: {
     fontSize: 20,

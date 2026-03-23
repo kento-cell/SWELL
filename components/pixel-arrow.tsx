@@ -1,6 +1,6 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Polygon, Rect } from 'react-native-svg';
+import React, { useState } from 'react';
+import { StyleSheet, View, Platform, Pressable } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 
 interface PixelArrowProps {
   direction: 'left' | 'right';
@@ -67,7 +67,7 @@ function PixelTriangle({
   }
 
   return (
-    <Svg width={size} height={size}>
+    <Svg width={size} height={size} pointerEvents="none">
       {pixels.map((px, i) => (
         <Rect
           key={i}
@@ -100,7 +100,7 @@ function PixelLock({ size, color }: { size: number; color: string }) {
   ];
 
   return (
-    <Svg width={size} height={size}>
+    <Svg width={size} height={size} pointerEvents="none">
       {shacklePixels.map((px, i) => (
         <Rect key={`s${i}`} x={px.c * p} y={px.r * p} width={p - 1} height={p - 1} fill={color} />
       ))}
@@ -120,18 +120,33 @@ export function PixelArrow({
 }: PixelArrowProps) {
   const arrowColor = disabled ? '#374151' : '#6B7280';
   const lockColor = '#A78BFA';
+  const [isPressed, setIsPressed] = useState(false);
+
+  const handlePress = () => {
+    if (!disabled) {
+      onPress();
+    }
+  };
+
+  // For web, attach onClick handler directly
+  const webProps = Platform.OS === 'web' ? {
+    onClick: handlePress as any,
+  } : {};
 
   return (
     <Pressable
-      onPress={onPress}
+      {...webProps}
+      onPress={handlePress}
+      onPressIn={() => !disabled && setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
       disabled={disabled}
-      style={({ pressed }) => [
+      style={[
         styles.button,
-        pressed && !disabled && { opacity: 0.6 },
         disabled && styles.disabled,
+        isPressed && !disabled && { opacity: 0.6 },
       ]}
     >
-      <View style={styles.inner}>
+      <View style={styles.inner} pointerEvents="none">
         <PixelTriangle direction={direction} size={size} color={arrowColor} />
         {locked && (
           <View style={[styles.lockOverlay, { width: size * 0.6, height: size * 0.6 }]}>
