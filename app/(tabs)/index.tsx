@@ -55,7 +55,8 @@ export default function HomeScreen() {
   // Use real-time data only; show empty list while loading (no mock fallback)
   const topics: Topic[] = realtimeTopics;
 
-  const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory);
+  // SOCIAL カテゴリは Premium ロックを表示しない（YouTube/TikTok ビデオは常に表示）
+  const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory) && activeCategory !== 'SOCIAL';
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
@@ -70,6 +71,7 @@ export default function HomeScreen() {
 
   const handlePrev = () => {
     const newIndex = currentIndex <= 0 ? topics.length - 1 : currentIndex - 1;
+    console.log('[handlePrev] currentIndex:', currentIndex, 'newIndex:', newIndex, 'topics.length:', topics.length);
     setCurrentIndex(newIndex);
     scrollToCard(newIndex);
     if (Platform.OS !== 'web') {
@@ -79,6 +81,7 @@ export default function HomeScreen() {
 
   const handleNext = () => {
     const newIndex = currentIndex >= topics.length - 1 ? 0 : currentIndex + 1;
+    console.log('[handleNext] currentIndex:', currentIndex, 'newIndex:', newIndex, 'topics.length:', topics.length);
     setCurrentIndex(newIndex);
     scrollToCard(newIndex);
     if (Platform.OS !== 'web') {

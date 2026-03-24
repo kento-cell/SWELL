@@ -61,20 +61,18 @@ function PixelTriangle({
     pixels.push({ row: 4, col: 3 });
     pixels.push({ row: 5, col: 2 });
     pixels.push({ row: 5, col: 3 });
-    pixels.push({ row: 6, col: 2 });
     pixels.push({ row: 6, col: 3 });
-    pixels.push({ row: 7, col: 3 });
   }
 
   return (
-    <Svg width={size} height={size} pointerEvents="none">
-      {pixels.map((px, i) => (
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {pixels.map((pixel, index) => (
         <Rect
-          key={i}
-          x={px.col * p}
-          y={px.row * p}
-          width={p - 1}
-          height={p - 1}
+          key={index}
+          x={pixel.col * p}
+          y={pixel.row * p}
+          width={p}
+          height={p}
           fill={color}
         />
       ))}
@@ -85,27 +83,44 @@ function PixelTriangle({
 // Pixel lock icon
 function PixelLock({ size, color }: { size: number; color: string }) {
   const p = Math.floor(size / 8);
-  // Simple pixel padlock
-  const bodyPixels = [
-    { r: 3, c: 1 }, { r: 3, c: 2 }, { r: 3, c: 3 }, { r: 3, c: 4 }, { r: 3, c: 5 },
-    { r: 4, c: 0 }, { r: 4, c: 1 }, { r: 4, c: 2 }, { r: 4, c: 3 }, { r: 4, c: 4 }, { r: 4, c: 5 }, { r: 4, c: 6 },
-    { r: 5, c: 0 }, { r: 5, c: 6 },
-    { r: 6, c: 0 }, { r: 6, c: 3 }, { r: 6, c: 6 },
-    { r: 7, c: 0 }, { r: 7, c: 3 }, { r: 7, c: 6 },
-  ];
-  const shacklePixels = [
-    { r: 0, c: 2 }, { r: 0, c: 3 }, { r: 0, c: 4 },
-    { r: 1, c: 1 }, { r: 1, c: 5 },
-    { r: 2, c: 1 }, { r: 2, c: 5 },
+  const pixels = [
+    // Lock body
+    { row: 2, col: 1 },
+    { row: 2, col: 2 },
+    { row: 2, col: 3 },
+    { row: 2, col: 4 },
+    { row: 2, col: 5 },
+    { row: 2, col: 6 },
+    { row: 3, col: 1 },
+    { row: 3, col: 6 },
+    { row: 4, col: 1 },
+    { row: 4, col: 6 },
+    { row: 5, col: 1 },
+    { row: 5, col: 6 },
+    { row: 6, col: 1 },
+    { row: 6, col: 2 },
+    { row: 6, col: 3 },
+    { row: 6, col: 4 },
+    { row: 6, col: 5 },
+    { row: 6, col: 6 },
+    // Keyhole
+    { row: 4, col: 3 },
+    { row: 4, col: 4 },
+    { row: 5, col: 3 },
+    { row: 5, col: 4 },
   ];
 
   return (
-    <Svg width={size} height={size} pointerEvents="none">
-      {shacklePixels.map((px, i) => (
-        <Rect key={`s${i}`} x={px.c * p} y={px.r * p} width={p - 1} height={p - 1} fill={color} />
-      ))}
-      {bodyPixels.map((px, i) => (
-        <Rect key={`b${i}`} x={px.c * p} y={px.r * p} width={p - 1} height={p - 1} fill={color} />
+    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {pixels.map((pixel, index) => (
+        <Rect
+          key={index}
+          x={pixel.col * p}
+          y={pixel.row * p}
+          width={p}
+          height={p}
+          fill={color}
+        />
       ))}
     </Svg>
   );
@@ -116,35 +131,59 @@ export function PixelArrow({
   onPress,
   disabled = false,
   locked = false,
-  size = 40,
+  size = 32,
 }: PixelArrowProps) {
-  const arrowColor = disabled ? '#374151' : '#6B7280';
-  const lockColor = '#A78BFA';
   const [isPressed, setIsPressed] = useState(false);
 
   const handlePress = () => {
+    console.log('[PixelArrow] handlePress called');
     if (!disabled) {
       onPress();
     }
   };
 
-  // For web, attach onClick handler directly
-  const webProps = Platform.OS === 'web' ? {
-    onClick: handlePress as any,
-  } : {};
+  // For web, use native button element
+  if (Platform.OS === 'web') {
+    return (
+      <button
+        onClick={handlePress}
+        disabled={disabled}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size,
+          height: size,
+        }}
+      >
+        <PixelTriangle direction={direction} size={size} color={disabled ? '#374151' : '#6B7280'} />
+        {locked && (
+          <div style={{ position: 'absolute' }}>
+            <PixelLock size={size * 0.6} color="#A78BFA" />
+          </div>
+        )}
+      </button>
+    );
+  }
+
+  // For native, use View with onPress
+  const arrowColor = disabled ? '#374151' : '#6B7280';
+  const lockColor = '#A78BFA';
 
   return (
-    <Pressable
-      {...webProps}
-      onPress={handlePress}
-      onPressIn={() => !disabled && setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      disabled={disabled}
+    <View
       style={[
         styles.button,
         disabled && styles.disabled,
         isPressed && !disabled && { opacity: 0.6 },
       ]}
+      onTouchStart={() => !disabled && setIsPressed(true)}
+      onTouchEnd={() => setIsPressed(false)}
     >
       <View style={styles.inner} pointerEvents="none">
         <PixelTriangle direction={direction} size={size} color={arrowColor} />
@@ -154,27 +193,28 @@ export function PixelArrow({
           </View>
         )}
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    padding: 8,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 4,
+  },
+  disabled: {
+    opacity: 0.5,
   },
   inner: {
-    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
   lockOverlay: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
-  },
-  disabled: {
-    opacity: 0.3,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
