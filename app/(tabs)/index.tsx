@@ -205,6 +205,7 @@ export default function HomeScreen() {
                     ) : (
                       <TopicCard
                         topic={item}
+                        category={activeCategory}
                         onPress={() => {
                           setSelectedTopic(item);
                           router.push({ pathname: '/topic/[id]', params: { id: item.id } });

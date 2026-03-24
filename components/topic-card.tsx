@@ -4,17 +4,32 @@ import { Topic } from '@/lib/types';
 import { WaveDisplay } from './wave-display';
 import { WaveLegend } from './wave-legend';
 import { SourceBadge } from './source-badge';
+import { WaveChart } from './wave-chart';
 import { useThemeContext } from '@/lib/theme-provider';
 
 interface TopicCardProps {
   topic: Topic;
   onPress: () => void;
+  category?: 'NEWS' | 'SOCIAL' | 'MARKET';
 }
 
-export function TopicCard({ topic, onPress }: TopicCardProps) {
+export function TopicCard({ topic, onPress, category = 'NEWS' }: TopicCardProps) {
   const { width } = useWindowDimensions();
   const cardWidth = Math.min(width - 32, 400);
   const { themeConfig } = useThemeContext();
+  
+  // MARKET カテゴリの場合は WaveChart を表示
+  const isMarketCategory = category === 'MARKET';
+  
+  // テスト用の株価データ
+  const mockStockData = isMarketCategory ? {
+    symbol: topic.title.split('\n')[0] || 'AAPL',
+    price: Math.random() * 200 + 100,
+    change: (Math.random() - 0.5) * 10,
+    changePercent: (Math.random() - 0.5) * 5,
+    high: Math.random() * 200 + 120,
+    low: Math.random() * 200 + 80,
+  } : null;
 
   return (
     <Pressable
@@ -30,52 +45,68 @@ export function TopicCard({ topic, onPress }: TopicCardProps) {
         pressed && styles.pressed,
       ]}
     >
-      {/* Wave visualization */}
+      {/* Wave visualization or Wave Chart */}
       <View style={[styles.waveContainer, { borderBottomColor: themeConfig.colors.border }]}>
-        <WaveDisplay
-          level={topic.waveLevel}
-          sentiment={topic.waveSentiment}
-          width={cardWidth - 2}
-          height={110}
-          animated
-        />
+        {isMarketCategory && mockStockData ? (
+          <WaveChart
+            data={mockStockData}
+            width={cardWidth - 32}
+            height={100}
+          />
+        ) : (
+          <WaveDisplay
+            level={topic.waveLevel}
+            sentiment={topic.waveSentiment}
+            width={cardWidth - 2}
+            height={110}
+            animated
+          />
+        )}
       </View>
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Source + legend row */}
-        <View style={styles.metaRow}>
-          <SourceBadge source={topic.source} />
-          <WaveLegend level={topic.waveLevel} sentiment={topic.waveSentiment} compact />
-        </View>
+        {/* Source + legend row (hide for MARKET) */}
+        {!isMarketCategory && (
+          <View style={styles.metaRow}>
+            <SourceBadge source={topic.source} />
+            <WaveLegend level={topic.waveLevel} sentiment={topic.waveSentiment} compact />
+          </View>
+        )}
 
-        {/* Title */}
+        {/* Title or Stock Symbol */}
         <Text
           style={[styles.title, { color: themeConfig.colors.foreground, fontFamily: themeConfig.typography.fontFamily }]}
-          numberOfLines={3}
+          numberOfLines={isMarketCategory ? 1 : 3}
         >
-          {topic.title}
+          {isMarketCategory ? mockStockData?.symbol : topic.title}
         </Text>
 
-        {/* Summary */}
-        <Text
-          style={[styles.summary, { color: themeConfig.colors.muted, fontFamily: themeConfig.typography.fontFamily }]}
-          numberOfLines={2}
-        >
-          {topic.summary}
-        </Text>
+        {/* Summary (hide for MARKET) */}
+        {!isMarketCategory && (
+          <Text
+            style={[styles.summary, { color: themeConfig.colors.muted, fontFamily: themeConfig.typography.fontFamily }]}
+            numberOfLines={2}
+          >
+            {topic.summary}
+          </Text>
+        )}
 
-        {/* Tags */}
-        <View style={styles.tagRow}>
-          {topic.tags.slice(0, 3).map((tag) => (
-            <View key={tag} style={[styles.tag, { backgroundColor: themeConfig.colors.background }]}>
-              <Text style={[styles.tagText, { color: themeConfig.colors.muted }]}>#{tag}</Text>
-            </View>
-          ))}
-        </View>
+        {/* Tags (hide for MARKET) */}
+        {!isMarketCategory && (
+          <View style={styles.tagRow}>
+            {topic.tags.slice(0, 3).map((tag) => (
+              <View key={tag} style={[styles.tag, { backgroundColor: themeConfig.colors.background }]}>
+                <Text style={[styles.tagText, { color: themeConfig.colors.muted }]}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Tap hint */}
-        <Text style={[styles.tapHint, { color: themeConfig.colors.muted }]}>タップで詳細を見る →</Text>
+        <Text style={[styles.tapHint, { color: themeConfig.colors.muted }]}>
+          {isMarketCategory ? '詳細を見る →' : 'タップで詳細を見る →'}
+        </Text>
       </View>
     </Pressable>
   );
