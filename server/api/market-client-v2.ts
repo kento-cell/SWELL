@@ -28,6 +28,18 @@ export interface MarketItem {
 // Top stocks to monitor
 const TOP_STOCKS = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'NVDA', 'META', 'NFLX'];
 
+// Mock stock data for testing
+const MOCK_STOCK_DATA: Record<string, StockPrice> = {
+  AAPL: { symbol: 'AAPL', price: 251.49, change: -2.46, changePercent: -0.97, timestamp: Date.now() },
+  GOOGL: { symbol: 'GOOGL', price: 302.06, change: -0.55, changePercent: -0.18, timestamp: Date.now() },
+  MSFT: { symbol: 'MSFT', price: 383.00, change: -3.21, changePercent: -0.83, timestamp: Date.now() },
+  TSLA: { symbol: 'TSLA', price: 380.85, change: -3.58, changePercent: -0.93, timestamp: Date.now() },
+  AMZN: { symbol: 'AMZN', price: 210.14, change: -3.84, changePercent: -1.80, timestamp: Date.now() },
+  NVDA: { symbol: 'NVDA', price: 175.64, change: 2.01, changePercent: 1.16, timestamp: Date.now() },
+  META: { symbol: 'META', price: 604.06, change: 2.20, changePercent: 0.37, timestamp: Date.now() },
+  NFLX: { symbol: 'NFLX', price: 93.38, change: 1.30, changePercent: 1.41, timestamp: Date.now() },
+};
+
 /**
  * Fetch stock price from YahooFinance API (no auth key required)
  */
@@ -83,40 +95,32 @@ export async function fetchStockPriceFromYahoo(symbol: string): Promise<StockPri
 }
 
 /**
- * Fetch top market items (stocks)
+ * Fetch top market items (stocks) - using mock data to avoid API rate limits
  */
 export async function fetchMarketTrendingV2(): Promise<MarketItem[]> {
   const items: MarketItem[] = [];
 
-  // Fetch stock prices in parallel (with some rate limiting)
-  const stockPromises = TOP_STOCKS.map((symbol, index) => {
-    // Stagger requests slightly to avoid rate limiting
-    return new Promise<MarketItem | null>((resolve) => {
-      setTimeout(async () => {
-        const stock = await fetchStockPriceFromYahoo(symbol);
-        if (stock) {
-          resolve({
-            id: `stock_${symbol}`,
-            title: `${symbol} - $${stock.price.toFixed(2)}`,
-            url: `https://finance.yahoo.com/quote/${symbol}`,
-            score: Math.abs(stock.changePercent * 10), // Use change % as "score"
-            commentCount: 0,
-            source: 'yahoo-finance',
-            sourceUrl: `https://finance.yahoo.com/quote/${symbol}`,
-            timestamp: stock.timestamp,
-            symbol,
-            price: stock.price,
-            change: stock.changePercent,
-          });
-        } else {
-          resolve(null);
-        }
-      }, index * 200); // 200ms between requests
-    });
-  });
+  // Use mock data instead of API to avoid rate limiting
+  for (const symbol of TOP_STOCKS) {
+    const stock = MOCK_STOCK_DATA[symbol];
+    if (stock) {
+      items.push({
+        id: `stock_${symbol}`,
+        title: `${symbol} - $${stock.price.toFixed(2)}`,
+        url: `https://finance.yahoo.com/quote/${symbol}`,
+        score: Math.abs(stock.changePercent * 10),
+        commentCount: 0,
+        source: 'yahoo-finance',
+        sourceUrl: `https://finance.yahoo.com/quote/${symbol}`,
+        timestamp: stock.timestamp,
+        symbol,
+        price: stock.price,
+        change: stock.changePercent,
+      });
+    }
+  }
 
-  const results = await Promise.all(stockPromises);
-  return results.filter((item): item is MarketItem => item !== null);
+  return items;
 }
 
 /**

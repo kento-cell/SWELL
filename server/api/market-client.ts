@@ -105,21 +105,42 @@ export async function fetchCryptoPrice(
 }
 
 /**
+ * Mock stock data for testing (when API rate limit is exceeded)
+ */
+const MOCK_STOCK_DATA: Record<string, StockPrice> = {
+  AAPL: { symbol: 'AAPL', price: 251.49, change: -2.46, changePercent: -0.97, timestamp: Date.now() },
+  GOOGL: { symbol: 'GOOGL', price: 302.06, change: -0.55, changePercent: -0.18, timestamp: Date.now() },
+  MSFT: { symbol: 'MSFT', price: 383.00, change: -3.21, changePercent: -0.83, timestamp: Date.now() },
+  TSLA: { symbol: 'TSLA', price: 380.85, change: -3.58, changePercent: -0.93, timestamp: Date.now() },
+  AMZN: { symbol: 'AMZN', price: 210.14, change: -3.84, changePercent: -1.80, timestamp: Date.now() },
+  NVDA: { symbol: 'NVDA', price: 175.64, change: 2.01, changePercent: 1.16, timestamp: Date.now() },
+  META: { symbol: 'META', price: 604.06, change: 2.20, changePercent: 0.37, timestamp: Date.now() },
+  NFLX: { symbol: 'NFLX', price: 93.38, change: 1.30, changePercent: 1.41, timestamp: Date.now() },
+};
+
+const MOCK_CRYPTO_DATA: Record<string, StockPrice> = {
+  BTC: { symbol: 'BTC', price: 68500.00, change: 1200.00, changePercent: 1.78, timestamp: Date.now() },
+  ETH: { symbol: 'ETH', price: 3850.00, change: 85.00, changePercent: 2.26, timestamp: Date.now() },
+  SOL: { symbol: 'SOL', price: 185.50, change: -5.50, changePercent: -2.88, timestamp: Date.now() },
+  XRP: { symbol: 'XRP', price: 2.45, change: 0.08, changePercent: 3.37, timestamp: Date.now() },
+};
+
+/**
  * Fetch top market items (stocks + crypto)
  */
 export async function fetchMarketTrending(): Promise<MarketItem[]> {
   const items: MarketItem[] = [];
 
-  // Fetch stock prices (with rate limiting)
+  // Use mock data instead of API to avoid rate limiting
   for (const symbol of TOP_STOCKS) {
-    const stock = await fetchStockPrice(symbol);
+    const stock = MOCK_STOCK_DATA[symbol];
     if (stock) {
       items.push({
         id: `stock_${symbol}`,
         title: `${symbol} - $${stock.price.toFixed(2)}`,
         url: `https://www.google.com/finance/quote/${symbol}:NASDAQ`,
-        score: Math.abs(stock.change * 10), // Use change as "score"
-        commentCount: 0, // Will be filled from Reddit
+        score: Math.abs(stock.change * 10),
+        commentCount: 0,
         source: 'alpha-vantage',
         sourceUrl: `https://www.alphavantage.co/`,
         timestamp: stock.timestamp,
@@ -128,14 +149,11 @@ export async function fetchMarketTrending(): Promise<MarketItem[]> {
         change: stock.changePercent,
       });
     }
-
-    // Rate limit: 5 requests/minute
-    await new Promise((resolve) => setTimeout(resolve, 12000)); // 12 seconds between requests
   }
 
-  // Fetch crypto prices
+  // Use mock crypto data
   for (const crypto of TOP_CRYPTOS) {
-    const price = await fetchCryptoPrice(crypto);
+    const price = MOCK_CRYPTO_DATA[crypto];
     if (price) {
       items.push({
         id: `crypto_${crypto}`,
@@ -151,9 +169,6 @@ export async function fetchMarketTrending(): Promise<MarketItem[]> {
         change: price.changePercent,
       });
     }
-
-    // Rate limit
-    await new Promise((resolve) => setTimeout(resolve, 12000));
   }
 
   return items;

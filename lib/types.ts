@@ -57,5 +57,5 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 };
 
 // Freeプランでアクセス可能なカテゴリ
-export const FREE_CATEGORIES: Category[] = ['NEWS'];
-export const PREMIUM_CATEGORIES: Category[] = ['SOCIAL', 'MARKET'];
+export const FREE_CATEGORIES: Category[] = ['NEWS', 'MARKET'];
+export const PREMIUM_CATEGORIES: Category[] = ['SOCIAL'];
