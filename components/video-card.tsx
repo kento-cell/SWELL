@@ -76,6 +76,41 @@ function buildYouTubeHTML(videoId: string): string {
 </html>`;
 }
 
+/**
+ * TikTok iframe HTML for WebView
+ */
+function buildTikTokHTML(videoUrl: string): string {
+  // Extract TikTok video ID from URL
+  // Formats: https://www.tiktok.com/@user/video/123456, https://vm.tiktok.com/abc123
+  const tiktokId = videoUrl.match(/(\d{15,})/)?.[1] || '';
+  
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <iframe
+      src="https://www.tiktok.com/embed/v2/${tiktokId}"
+      width="100%"
+      height="100%"
+      frameborder="0"
+      allow="autoplay; encrypted-media"
+      allowfullscreen
+    ></iframe>
+  </div>
+  <script async src="https://www.tiktok.com/embed.js"></script>
+</body>
+</html>`;
+}
+
 export function VideoCard({ topic, cardWidth }: VideoCardProps) {
   const { themeConfig } = useThemeContext();
   const tc = themeConfig.colors;
@@ -92,8 +127,11 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
     if (isYouTube && topic.videoId) {
       // YouTube: toggle WebView player
       setIsPlaying((prev) => !prev);
+    } else if (isTikTok && topic.sourceUrl) {
+      // TikTok: toggle WebView player (embed video)
+      setIsPlaying((prev) => !prev);
     } else if (topic.sourceUrl) {
-      // TikTok or fallback: open in browser
+      // Fallback: open in browser
       await WebBrowser.openBrowserAsync(topic.sourceUrl);
     }
   };
@@ -112,10 +150,10 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
     ]}>
       {/* Video area */}
       <View style={[styles.videoArea, { height: VIDEO_HEIGHT }]}>
-        {isPlaying && isYouTube && topic.videoId ? (
-          // YouTube WebView player
+        {isPlaying && ((isYouTube && topic.videoId) || (isTikTok && topic.sourceUrl)) ? (
+          // YouTube or TikTok WebView player
           <WebView
-            source={{ html: buildYouTubeHTML(topic.videoId) }}
+            source={{ html: isYouTube ? buildYouTubeHTML(topic.videoId!) : buildTikTokHTML(topic.sourceUrl!) }}
             style={styles.webView}
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}

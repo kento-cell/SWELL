@@ -18,6 +18,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { CategoryTab } from '@/components/category-tab';
 import { TopicCard } from '@/components/topic-card';
 import { VideoCard } from '@/components/video-card';
+import { StockCard } from '@/components/stock-card';
 import { PixelArrow } from '@/components/pixel-arrow';
 import { PageIndicator } from '@/components/page-indicator';
 import { LockOverlay } from '@/components/lock-overlay';
@@ -198,10 +199,23 @@ export default function HomeScreen() {
               renderItem={({ item }) => {
                 // SOCIAL カテゴリで動画データがある場合は VideoCard を使用
                 const isVideoItem = activeCategory === 'SOCIAL' && item.videoType;
+                // MARKET カテゴリで株価データがある場合は StockCard を使用
+                const isStockItem = activeCategory === 'MARKET';
                 return (
                   <View style={{ width: CARD_WIDTH, marginHorizontal: 8 }}>
                     {isVideoItem ? (
                       <VideoCard topic={item} cardWidth={CARD_WIDTH} />
+                    ) : isStockItem ? (
+                      <StockCard
+                        symbol={item.title.split(' - ')[0] || 'N/A'}
+                        price={parseFloat(item.title.match(/\$(\d+\.\d+)/)?.[1] || '0')}
+                        change={item.score || 0}
+                        changePercent={item.score || 0}
+                        onPress={() => {
+                          setSelectedTopic(item);
+                          router.push({ pathname: '/topic/[id]', params: { id: item.id } });
+                        }}
+                      />
                     ) : (
                       <TopicCard
                         topic={item}
