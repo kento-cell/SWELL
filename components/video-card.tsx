@@ -22,6 +22,14 @@ import { Topic } from '@/lib/types';
 import { useThemeContext } from '@/lib/theme-provider';
 import { getApiBaseUrl } from '@/constants/oauth';
 
+// HTML button for Web compatibility
+const HtmlButton = (props: any) => {
+  if (Platform.OS === 'web') {
+    return <button {...props} style={{ ...props.style, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />;
+  }
+  return <Pressable {...props} />;
+};
+
 // Use server proxy for thumbnails to avoid CORS/CSP issues in web preview
 // Must use absolute URL (getApiBaseUrl returns 3000-xxx domain) to avoid hitting Metro (8081)
 function getProxiedThumbnail(url: string | undefined): string | undefined {
@@ -117,9 +125,10 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
           />
         ) : (
           // Thumbnail with play button overlay
-          <Pressable
+          <HtmlButton
             onPress={handlePress}
-            style={({ pressed }) => [styles.thumbnailContainer, pressed && { opacity: 0.85 }]}
+            onClick={handlePress}
+            style={styles.thumbnailContainer}
           >
             {topic.thumbnail ? (
               <Image
@@ -165,17 +174,18 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
                 </Text>
               </View>
             </View>
-          </Pressable>
+            </HtmlButton>
         )}
 
         {/* Close button when playing */}
         {isPlaying && (
-          <Pressable
+          <HtmlButton
             onPress={() => setIsPlaying(false)}
+            onClick={() => setIsPlaying(false)}
             style={styles.closeButton}
           >
             <Text style={styles.closeButtonText}>✕</Text>
-          </Pressable>
+          </HtmlButton>
         )}
       </View>
 
