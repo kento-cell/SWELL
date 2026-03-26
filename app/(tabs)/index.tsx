@@ -209,8 +209,8 @@ export default function HomeScreen() {
                       <StockCard
                         symbol={item.title.split(' - ')[0] || 'N/A'}
                         price={parseFloat(item.title.match(/\$(\d+\.\d+)/)?.[1] || '0')}
-                        change={item.score || 0}
-                        changePercent={item.score || 0}
+                        change={parseFloat(item.description?.match(/([+-]?\d+\.\d+)%/)?.[1] || '0')}
+                        changePercent={parseFloat(item.description?.match(/([+-]?\d+\.\d+)%/)?.[1] || '0')}
                         onPress={() => {
                           setSelectedTopic(item);
                           router.push({ pathname: '/topic/[id]', params: { id: item.id } });

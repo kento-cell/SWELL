@@ -138,6 +138,9 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
 
   const waveColor = getWaveColor(topic.waveSentiment);
 
+  // Extract TikTok video ID for web iframe
+  const tiktokId = topic.sourceUrl?.match(/(\d{15,})/)?.[1] || '';
+
   return (
     <View style={[
       styles.card,
@@ -151,16 +154,32 @@ export function VideoCard({ topic, cardWidth }: VideoCardProps) {
       {/* Video area */}
       <View style={[styles.videoArea, { height: VIDEO_HEIGHT }]}>
         {isPlaying && ((isYouTube && topic.videoId) || (isTikTok && topic.sourceUrl)) ? (
-          // YouTube or TikTok WebView player
-          <WebView
-            source={{ html: isYouTube ? buildYouTubeHTML(topic.videoId!) : buildTikTokHTML(topic.sourceUrl!) }}
-            style={styles.webView}
-            allowsInlineMediaPlayback
-            mediaPlaybackRequiresUserAction={false}
-            javaScriptEnabled
-            domStorageEnabled
-            scrollEnabled={false}
-          />
+          // YouTube or TikTok player
+          Platform.OS === 'web' ? (
+            // Web: Use iframe directly (no WebView support)
+            <iframe
+              src={isYouTube ? `https://www.youtube.com/embed/${topic.videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1` : `https://www.tiktok.com/embed/v2/${tiktokId}`}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: 8,
+              } as any}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            // Native: Use WebView
+            <WebView
+              source={{ html: isYouTube ? buildYouTubeHTML(topic.videoId!) : buildTikTokHTML(topic.sourceUrl!) }}
+              style={styles.webView}
+              allowsInlineMediaPlayback
+              mediaPlaybackRequiresUserAction={false}
+              javaScriptEnabled
+              domStorageEnabled
+              scrollEnabled={false}
+            />
+          )
         ) : (
           // Thumbnail with play button overlay
           <HtmlButton

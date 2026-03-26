@@ -4,7 +4,7 @@ import { MOCK_TOPICS, getTopicsByCategory as getMockTopicsByCategory } from './m
 import { fetchHackerNewsTopics, fetchHackerNewsByCategory } from './hackernews-client';
 import { fetchRSSFeedsByCategory, POPULAR_RSS_FEEDS } from './rss-client';
 
-export type DataSource = 'mock' | 'hackernews' | 'rss';
+export type DataSource = 'hackernews' | 'rss';
 
 const DATA_SOURCE_KEY = 'swell_data_source';
 const CACHE_KEY_PREFIX = 'swell_cache_';
@@ -21,9 +21,9 @@ interface CacheEntry {
 export async function getCurrentDataSource(): Promise<DataSource> {
   try {
     const stored = await AsyncStorage.getItem(DATA_SOURCE_KEY);
-    return (stored as DataSource) || 'mock';
+    return (stored as DataSource) || 'hackernews';
   } catch {
-    return 'mock';
+    return 'hackernews';
   }
 }
 
@@ -111,18 +111,14 @@ export async function getTopicsByCategory(
         break;
 
       case 'rss':
-        topics = await fetchRSSFeedsByCategory(category);
-        break;
-
-      case 'mock':
       default:
-        topics = getMockTopicsByCategory(category);
+        topics = await fetchRSSFeedsByCategory(category);
         break;
     }
   } catch (error) {
     console.error(`Failed to fetch topics from ${dataSource}:`, error);
-    // Fallback to mock data on error
-    topics = getMockTopicsByCategory(category);
+    // Return empty array on error instead of fallback to mock
+    topics = [];
   }
 
   // Save to cache
@@ -164,11 +160,6 @@ export async function clearAllCaches(): Promise<void> {
  */
 export function getAvailableDataSources(): Array<{ id: DataSource; label: string; description: string }> {
   return [
-    {
-      id: 'mock',
-      label: 'モックデータ',
-      description: 'サンプルデータ（オフライン対応）',
-    },
     {
       id: 'hackernews',
       label: 'HackerNews',

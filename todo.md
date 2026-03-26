@@ -407,3 +407,18 @@
   - [x] 波の透明度アニメーション
   - [x] 上下で色を自動判定（緑/赤）
 - [x] ホーム画面に StockCard 統合
+
+
+## 最終実装（2026-03-26）
+- [x] モックデータ削除（設定画面）
+- [x] Yahoo Finance マルチエンドポイント実装
+  - [x] v7/finance/quote（最優先）
+  - [x] v10/finance/quoteSummary（代替）
+  - [x] v8/finance/chart（フォールバック）
+- [x] MARKET データ表示修正
+  - [x] StockCard データ抽出修正
+  - [x] 波アニメーション実装
+- [x] WebView Web 互換性修正
+  - [x] Platform.OS === 'web' で iframe 直接使用
+  - [x] ネイティブ環境では WebView 使用
+- [x] GitHub へプッシュ準備完了

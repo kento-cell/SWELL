@@ -41,6 +41,68 @@ export interface MarketItem {
 const TOP_STOCKS = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'NVDA', 'META', 'NFLX'];
 
 /**
+ * Try multiple Yahoo Finance API endpoints with fallback
+ * @param symbol Stock ticker symbol (e.g., 'AAPL')
+ * @returns Stock price data or null if all endpoints fail
+ */
+async function tryYahooFinanceEndpoints(symbol: string): Promise<any> {
+  const endpoints = [
+    // Endpoint 1: v7/finance/quote (most reliable)
+    async () => {
+      const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      return data?.quoteResponse?.result?.[0] || null;
+    },
+    // Endpoint 2: v10/finance/quoteSummary
+    async () => {
+      const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price`;
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      return data?.quoteSummary?.result?.[0]?.price || null;
+    },
+    // Endpoint 3: v8/finance/chart (fallback)
+    async () => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as any;
+      const result = data?.chart?.result?.[0];
+      if (!result) return null;
+      const quote = result.indicators?.quote?.[0];
+      if (!quote) return null;
+      return {
+        regularMarketPrice: { raw: quote.close?.[quote.close.length - 1] || 0 },
+        regularMarketPreviousClose: { raw: quote.open?.[0] || quote.close?.[0] || 0 },
+        currency: 'USD',
+      };
+    },
+  ];
+
+  for (let i = 0; i < endpoints.length; i++) {
+    try {
+      console.log(`[Market] Trying endpoint ${i + 1}/${endpoints.length} for ${symbol}...`);
+      const result = await endpoints[i]();
+      if (result) {
+        console.log(`[Market] Endpoint ${i + 1} succeeded for ${symbol}`);
+        return result;
+      }
+    } catch (error) {
+      console.warn(`[Market] Endpoint ${i + 1} failed for ${symbol}:`, error instanceof Error ? error.message : String(error));
+    }
+  }
+  return null;
+}
+
+/**
  * Fetch stock price from Yahoo Finance API directly
  * No authentication required - completely free
  * 
@@ -51,52 +113,43 @@ export async function fetchStockPriceFromYahoo(symbol: string): Promise<StockPri
   try {
     console.log(`[Market] Fetching ${symbol} from Yahoo Finance...`);
     
-    // Direct Yahoo Finance API call - no auth required
-    const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price`;
+    const priceData = await tryYahooFinanceEndpoints(symbol);
     
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-    });
-
-    if (!response.ok) {
-      console.warn(`[Market] Yahoo Finance returned ${response.status} for ${symbol}`);
+    if (!priceData) {
+      console.warn(`[Market] No price data for ${symbol} from any endpoint`);
       return null;
     }
 
-    const data = await response.json() as any;
-    
-    if (!data?.quoteSummary?.result?.[0]?.price) {
-      console.warn(`[Market] No price data for ${symbol}`);
-      return null;
-    }
+    // Extract price information (handle both endpoint formats)
+    const regularMarketPrice = priceData.regularMarketPrice?.raw || priceData.regularMarketPrice || 0;
+    const previousClose = priceData.regularMarketPreviousClose?.raw || priceData.regularMarketPreviousClose || regularMarketPrice;
+    const dayHigh = priceData.regularMarketDayHigh?.raw || priceData.regularMarketDayHigh;
+    const dayLow = priceData.regularMarketDayLow?.raw || priceData.regularMarketDayLow;
+    const volume = priceData.regularMarketVolume?.raw || priceData.regularMarketVolume;
 
-    const priceData = data.quoteSummary.result[0].price;
-    
-    // Extract price information
-    const regularMarketPrice = priceData.regularMarketPrice?.raw || 0;
-    const previousClose = priceData.regularMarketPreviousClose?.raw || regularMarketPrice;
     const change = regularMarketPrice - previousClose;
     const changePercent = previousClose !== 0 ? (change / previousClose) * 100 : 0;
 
     const result: StockPrice = {
-      symbol: priceData.symbol || symbol,
+      symbol,
       price: regularMarketPrice,
       change,
       changePercent,
       timestamp: Date.now(),
-      dayHigh: priceData.regularMarketDayHigh?.raw,
-      dayLow: priceData.regularMarketDayLow?.raw,
-      volume: priceData.regularMarketVolume?.raw,
-      currency: priceData.currency,
+      dayHigh,
+      dayLow,
+      volume,
+      currency: priceData.currency || 'USD',
     };
 
     console.log(`[Market] Successfully fetched ${symbol}: $${result.price} (${result.changePercent.toFixed(2)}%)`);
     return result;
   } catch (error) {
-    console.error(`[Market] Error fetching ${symbol}:`, error instanceof Error ? error.message : String(error));
+    console.error(`[Market] Error fetching ${symbol}:`, error);
+    if (error instanceof Error) {
+      console.error(`[Market] Error details: ${error.message}`);
+      console.error(`[Market] Stack: ${error.stack}`);
+    }
     return null;
   }
 }

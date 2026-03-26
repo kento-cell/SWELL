@@ -4,15 +4,8 @@ import { getAvailableDataSources } from '../data-source-manager';
 describe('DataSourceManager', () => {
   it('should return available data sources', () => {
     const sources = getAvailableDataSources();
-    expect(sources).toHaveLength(3);
-    expect(sources.map((s) => s.id)).toEqual(['mock', 'hackernews', 'rss']);
-  });
-
-  it('should have proper labels for each source', () => {
-    const sources = getAvailableDataSources();
-    const mockSource = sources.find((s) => s.id === 'mock');
-    expect(mockSource?.label).toBe('モックデータ');
-    expect(mockSource?.description).toContain('サンプルデータ');
+    expect(sources).toHaveLength(2);
+    expect(sources.map((s) => s.id)).toEqual(['hackernews', 'rss']);
   });
 
   it('should have HackerNews source', () => {
@@ -20,6 +13,12 @@ describe('DataSourceManager', () => {
     const hnSource = sources.find((s) => s.id === 'hackernews');
     expect(hnSource?.label).toBe('HackerNews');
     expect(hnSource?.description).toContain('テック');
+  });
+
+  it('should not have mock data source', () => {
+    const sources = getAvailableDataSources();
+    const mockSource = sources.find((s) => s.id === 'hackernews' && s.label === 'NonExistent');
+    expect(mockSource).toBeUndefined();
   });
 
   it('should have RSS source', () => {
@@ -31,6 +30,7 @@ describe('DataSourceManager', () => {
 
   it('should have descriptions for all sources', () => {
     const sources = getAvailableDataSources();
+    expect(sources.length).toBeGreaterThan(0);
     sources.forEach((source) => {
       expect(source.description).toBeTruthy();
       expect(source.description.length).toBeGreaterThan(0);

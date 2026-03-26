@@ -50,7 +50,7 @@ export default function SettingsScreen() {
   const { plan, setPlan } = usePlan();
   const { designTheme, setDesignTheme } = useThemeContext();
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
-  const [dataSource, setDataSourceState] = useState<DataSource>('mock');
+  const [dataSource, setDataSourceState] = useState<DataSource>('hackernews');
 
   useEffect(() => {
     getCurrentDataSource().then(setDataSourceState);
