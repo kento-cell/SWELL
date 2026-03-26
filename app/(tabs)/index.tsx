@@ -33,8 +33,6 @@ import { useCategoryData, useNewsData } from '@/hooks/use-real-time-data';
 import { useTopicContext } from '@/lib/topic-context';
 import { useLocalization } from '@/lib/localization-context';
 import { useThemeContext } from '@/lib/theme-provider';
-import { useUserInterests, recordUserInteraction } from '@/hooks/use-user-interests';
-import { filterByUserInterests } from '@/lib/personalization';
 
 const CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -54,16 +52,9 @@ export default function HomeScreen() {
   const { topics: realtimeTopics, isLoading, error, source } = useCategoryData(activeCategory);
   // Always fetch NEWS topics for wave ranking widget (independent of active category)
   const { topics: newsTopics } = useNewsData();
-  // User interests for personalization
-  const { interests: userInterests } = useUserInterests();
 
   // Use real-time data only; show empty list while loading (no mock fallback)
-  let topics: Topic[] = realtimeTopics;
-  
-  // Apply personalization filtering if user interests are loaded
-  if (userInterests && userInterests.interests.length > 0) {
-    topics = filterByUserInterests(realtimeTopics, userInterests, { maxResults: 50 }) as Topic[];
-  }
+  const topics: Topic[] = realtimeTopics;
 
   // SOCIAL カテゴリは Premium ロックを表示しない（YouTube/TikTok ビデオは常に表示）
   const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory) && activeCategory !== 'SOCIAL';
@@ -128,20 +119,10 @@ export default function HomeScreen() {
 
   // Scroll to a specific index
   const scrollToCard = (index: number) => {
-    if (Platform.OS === 'web') {
-      // Web: use scrollToIndex
-      flatListRef.current?.scrollToIndex({
-        index,
-        animated: true,
-        viewPosition: 0.5,
-      });
-    } else {
-      // Native: use scrollToOffset
-      flatListRef.current?.scrollToOffset({
-        offset: index * ITEM_WIDTH,
-        animated: true,
-      });
-    }
+    flatListRef.current?.scrollToOffset({
+      offset: index * ITEM_WIDTH,
+      animated: true,
+    });
   };
 
   useEffect(() => {
@@ -231,7 +212,6 @@ export default function HomeScreen() {
                         change={parseFloat(item.description?.match(/([+-]?\d+\.\d+)%/)?.[1] || '0')}
                         changePercent={parseFloat(item.description?.match(/([+-]?\d+\.\d+)%/)?.[1] || '0')}
                         onPress={() => {
-                          recordUserInteraction(activeCategory, item.id);
                           setSelectedTopic(item);
                           router.push({ pathname: '/topic/[id]', params: { id: item.id } });
                         }}
@@ -241,7 +221,6 @@ export default function HomeScreen() {
                         topic={item}
                         category={activeCategory}
                         onPress={() => {
-                          recordUserInteraction(activeCategory, item.id);
                           setSelectedTopic(item);
                           router.push({ pathname: '/topic/[id]', params: { id: item.id } });
                         }}
