@@ -422,3 +422,25 @@
   - [x] Platform.OS === 'web' で iframe 直接使用
   - [x] ネイティブ環境では WebView 使用
 - [x] GitHub へプッシュ準備完了
+
+
+## ユーザー興味トラッキング・パーソナライゼーション実装（2026-03-26）
+- [x] use-user-interests.ts 実装
+  - [x] AsyncStorage ベースの興味管理
+  - [x] クリック数・閲覧履歴トラッキング
+  - [x] パーソナライゼーション スコア計算
+- [x] ユーザー興味トラッキングテスト（11/11 PASS）
+  - [x] initializeUserInterests テスト
+  - [x] saveUserInterests テスト
+  - [x] recordUserInteraction テスト
+  - [x] getPersonalizationScore テスト
+  - [x] sortByPersonalization テスト
+- [ ] X/Twitter API 統合（無料ティア・サーバーサイドキャッシング）
+  - [ ] X API キー取得
+  - [ ] トレンドツイート取得実装
+  - [ ] サーバーサイドキャッシング実装
+  - [ ] SOCIAL タブに統合
+- [ ] エンドツーエンドテスト
+  - [ ] 全カテゴリでパーソナライゼーション動作確認
+  - [ ] キャッシング動作確認
+  - [ ] デグレード確認
