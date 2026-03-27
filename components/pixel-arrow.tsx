@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Platform, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Svg, { Rect } from 'react-native-svg';
 
 interface PixelArrowProps {
@@ -134,11 +135,15 @@ export function PixelArrow({
   size = 32,
 }: PixelArrowProps) {
   const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handlePress = () => {
     console.log('[PixelArrow] handlePress called');
     if (!disabled) {
       onPress();
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     }
   };
 
@@ -159,7 +164,16 @@ export function PixelArrow({
           justifyContent: 'center',
           width: size,
           height: size,
+          transition: 'transform 0.15s ease-out, opacity 0.15s ease-out',
+          transform: isPressed && !disabled ? 'scale(0.92)' : isHovered && !disabled ? 'scale(1.05)' : 'scale(1)',
         }}
+        onMouseDown={() => !disabled && setIsPressed(true)}
+        onMouseUp={() => setIsPressed(false)}
+        onMouseLeave={() => {
+          setIsPressed(false);
+          setIsHovered(false);
+        }}
+        onMouseEnter={() => !disabled && setIsHovered(true)}
       >
         <PixelTriangle direction={direction} size={size} color={disabled ? '#374151' : '#6B7280'} />
         {locked && (

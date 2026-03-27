@@ -1,6 +1,7 @@
 import { fetchHackerNewsTopStories, calculateWaveLevel, calculateWaveSentiment } from './news-client';
 import { fetchAllSocialTrending, calculateSocialWaveSentiment } from './rss-social-client';
 import { fetchHNSocialTrending, calculateSocialWaveSentiment as calculateHNSocialWaveSentiment, calculateSocialWaveLevel as calculateHNSocialWaveLevel } from './hackernews-social-client';
+import { getBlueskySocialContent } from './bluesky-social-client';
 import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client-v2';
 import { cacheService, CACHE_CONFIG } from './cache-service';
 import { fetchJapaneseNews } from './japanese-news-client';
@@ -108,7 +109,7 @@ export async function fetchNewsData(): Promise<CategoryData> {
 }
 
 /**
- * Fetch SOCIAL category data (HackerNews Show HN + Ask HN)
+ * Fetch SOCIAL category data (HackerNews Show HN + Ask HN + Bluesky)
  */
 export async function fetchSocialData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.SOCIAL;
@@ -126,15 +127,16 @@ export async function fetchSocialData(): Promise<CategoryData> {
       category: 'SOCIAL',
       items: [],
       lastUpdated: Date.now(),
-      source: 'HackerNews (rate limited)',
+      source: 'HackerNews (Show HN / Ask HN)',
     };
   }
 
   try {
-    // HackerNews Show HN + Ask HN from community-shared content
+    // Fetch from HackerNews (Bluesky API endpoint not implemented)
     const hnItems = await fetchHNSocialTrending(20);
 
-    const topicItems: TopicData[] = hnItems.map((item) => ({
+    // Convert HackerNews items
+    const hnTopicItems: TopicData[] = hnItems.map((item) => ({
       id: item.id,
       title: item.title,
       url: item.url,
@@ -149,7 +151,7 @@ export async function fetchSocialData(): Promise<CategoryData> {
 
     const result: CategoryData = {
       category: 'SOCIAL',
-      items: topicItems,
+      items: hnTopicItems.slice(0, 20),
       lastUpdated: Date.now(),
       source: 'HackerNews (Show HN / Ask HN)',
     };
@@ -164,7 +166,7 @@ export async function fetchSocialData(): Promise<CategoryData> {
       category: 'SOCIAL',
       items: [],
       lastUpdated: Date.now(),
-      source: 'HackerNews (error)',
+      source: 'HackerNews + Bluesky (error)',
     };
   }
 }

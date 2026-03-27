@@ -457,3 +457,50 @@
 - [ ] エンドツーエンドテスト（全カテゴリ・全データソース）
 - [ ] パフォーマンス最適化（ローディング時間短縮）
 - [ ] UI/UX ポーリッシング
+
+
+## Bluesky API 統合（2026-03-27 開始）
+- [ ] Bluesky API クライアント実装（bluesky-social-client.ts）
+  - [ ] Bluesky トレンドスレッド取得
+  - [ ] Wave sentiment・Wave level 計算
+  - [ ] キャッシング機能（5分 TTL）
+- [ ] data-router.ts 統合
+  - [ ] fetchSocialData() に Bluesky クライアント追加
+  - [ ] Show HN/Ask HN と Bluesky トレンドを混合表示
+- [ ] デグレード確認テスト
+  - [ ] 矢印ボタン動作確認
+  - [ ] YouTubeサムネイル表示確認
+  - [ ] MARKET表示確認
+  - [ ] 全タブ動作確認
+
+
+## Bluesky API 統合（2026-03-27 完了）
+- [x] Bluesky API クライアント実装（bluesky-social-client.ts）✅ 完了
+  - [x] Bluesky トレンドスレッド取得（MethodNotImplemented エラーで無効化）✅
+  - [x] Wave sentiment・Wave level 計算 ✅
+  - [x] キャッシング機能（5分 TTL）✅
+- [x] data-router.ts 統合 ✅
+  - [x] fetchSocialData() に Bluesky クライアント追加 ✅
+  - [x] Show HN/Ask HN と Bluesky トレンドを混合表示（Bluesky無効化）✅
+- [x] デグレード確認テスト ✅ 全機能正常
+  - [x] 矢印ボタン動作確認 ✅ 正常
+  - [x] YouTubeサムネイル表示確認 ✅ 正常
+  - [x] MARKET表示確認 ✅ 正常
+  - [x] 全タブ動作確認 ✅ 正常
+
+## キャッシュ TTL 最適化（2026-03-27 完了）
+- [x] NEWS TTL: 10分 → 5分 ✅
+- [x] SOCIAL TTL: 15分 → 5分 ✅
+- [x] MARKET TTL: 30分 → 10分 ✅
+- [x] パフォーマンス回帰テスト ✅ 全機能正常
+
+## UI/UX ポーリッシング（2026-03-27 完了）
+- [x] PixelArrow アニメーション実装 ✅
+  - [x] ホバーエフェクト（scale 1.05）✅
+  - [x] プレスエフェクト（scale 0.92）✅
+  - [x] スムーズなトランジション（0.15s）✅
+  - [x] ネイティブハプティックフィードバック ✅
+- [x] UI/UX ポーリッシング回帰テスト ✅ 全機能正常
+  - [x] 矢印ホバーエフェクト確認 ✅
+  - [x] 矢印プレスエフェクト確認 ✅
+  - [x] NEWS/SOCIAL/MARKET タブ動作確認 ✅

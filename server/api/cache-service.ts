@@ -88,17 +88,17 @@ export const cacheService = new CacheService();
 export const CACHE_CONFIG = {
   NEWS: {
     key: 'news:hackernews',
-    ttl: 600, // 10 minutes
+    ttl: 300, // 5 minutes (optimized for fresh news)
     rateLimit: { maxRequests: 1, windowSeconds: 1 }, // 1 req/sec
   },
   SOCIAL: {
     key: 'social:rss',
-    ttl: 900, // 15 minutes
+    ttl: 300, // 5 minutes (optimized for trending content)
     rateLimit: { maxRequests: 2, windowSeconds: 60 }, // 2 req/min
   },
   MARKET: {
     key: 'market:alphavantage',
-    ttl: 1800, // 30 minutes
+    ttl: 600, // 10 minutes (stock prices update less frequently)
     rateLimit: { maxRequests: 5, windowSeconds: 60 }, // 5 req/min
   },
 };
