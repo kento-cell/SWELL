@@ -205,8 +205,8 @@ export const dataRouter = router({
             }
             break;
           case 'SOCIAL':
-            // SOCIALタブはYouTubeトレンド動画のみ表示（Medium記事は除外）
-            data = await fetchVideosData();
+            // SOCIALタブはHackerNews Show HN/Ask HNコミュニティコンテンツを表示
+            data = await fetchSocialData();
             break;
           case 'MARKET':
             data = await fetchMarketData();

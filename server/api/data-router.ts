@@ -1,5 +1,6 @@
 import { fetchHackerNewsTopStories, calculateWaveLevel, calculateWaveSentiment } from './news-client';
 import { fetchAllSocialTrending, calculateSocialWaveSentiment } from './rss-social-client';
+import { fetchHNSocialTrending, calculateSocialWaveSentiment as calculateHNSocialWaveSentiment, calculateSocialWaveLevel as calculateHNSocialWaveLevel } from './hackernews-social-client';
 import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client-v2';
 import { cacheService, CACHE_CONFIG } from './cache-service';
 import { fetchJapaneseNews } from './japanese-news-client';
@@ -107,7 +108,7 @@ export async function fetchNewsData(): Promise<CategoryData> {
 }
 
 /**
- * Fetch SOCIAL category data
+ * Fetch SOCIAL category data (HackerNews Show HN + Ask HN)
  */
 export async function fetchSocialData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.SOCIAL;
@@ -125,32 +126,32 @@ export async function fetchSocialData(): Promise<CategoryData> {
       category: 'SOCIAL',
       items: [],
       lastUpdated: Date.now(),
-      source: 'RSS Feeds (rate limited)',
+      source: 'HackerNews (rate limited)',
     };
   }
 
   try {
-    const items = await fetchAllSocialTrending();
+    // HackerNews Show HN + Ask HN from community-shared content
+    const hnItems = await fetchHNSocialTrending(20);
 
-    const topicItems: TopicData[] = items.map((item) => ({
+    const topicItems: TopicData[] = hnItems.map((item) => ({
       id: item.id,
       title: item.title,
       url: item.url,
       sourceUrl: item.sourceUrl,
-      source: item.source === 'medium' ? 'Medium' : 'Product Hunt',
-      waveLevel: item.score > 60 ? 'high' : item.score > 30 ? 'medium' : 'low',
-      waveSentiment: calculateSocialWaveSentiment(item.score, item.commentCount),
+      source: item.source,
+      waveLevel: calculateHNSocialWaveLevel(item.score),
+      waveSentiment: calculateHNSocialWaveSentiment(item.score, item.commentCount),
       timestamp: item.timestamp,
       score: item.score,
       commentCount: item.commentCount,
-      description: item.description,
     }));
 
     const result: CategoryData = {
       category: 'SOCIAL',
       items: topicItems,
       lastUpdated: Date.now(),
-      source: 'RSS Feeds (Medium, Product Hunt)',
+      source: 'HackerNews (Show HN / Ask HN)',
     };
 
     // Cache the result
@@ -163,7 +164,7 @@ export async function fetchSocialData(): Promise<CategoryData> {
       category: 'SOCIAL',
       items: [],
       lastUpdated: Date.now(),
-      source: 'RSS Feeds (error)',
+      source: 'HackerNews (error)',
     };
   }
 }
