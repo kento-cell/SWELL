@@ -504,3 +504,83 @@
   - [x] 矢印ホバーエフェクト確認 ✅
   - [x] 矢印プレスエフェクト確認 ✅
   - [x] NEWS/SOCIAL/MARKET タブ動作確認 ✅
+
+
+## MARKET タブ大幅拡張（2026-03-27 開始）
+
+### Phase 1: アーキテクチャ設計
+- [ ] MARKET サブカテゴリ構造実装
+  - [ ] 日本株（日経225・個別銘柄）
+  - [ ] 米国株（S&P 500・NASDAQ・個別銘柄）
+  - [ ] 投資信託（日本・海外ファンド）
+  - [ ] コモディティ（金・銀・プラチナ・原油・天然ガス）
+  - [ ] コレクティブル（ポケモンカード・スニーカー）
+
+### Phase 2: 日本株・投資信託実装
+- [ ] Yahoo Finance Japan クライアント実装
+  - [ ] 日経225 銘柄取得
+  - [ ] 個別日本株取得
+  - [ ] 投資信託データ取得
+  - [ ] Wave sentiment・Wave level 計算
+
+### Phase 3: コモディティ実装
+- [ ] Yahoo Finance コモディティエンドポイント
+  - [ ] 金（Gold）相場取得
+  - [ ] 銀（Silver）相場取得
+  - [ ] プラチナ相場取得
+  - [ ] 原油・天然ガス相場取得
+
+### Phase 4: コレクティブル実装
+- [ ] TCGPlayer API（ポケモンカード）
+  - [ ] 高額カード取得
+  - [ ] 相場情報・取引履歴
+  - [ ] Wave sentiment 計算
+- [ ] StockX API（スニーカー）
+  - [ ] 限定スニーカー取得
+  - [ ] 相場情報・取引履歴
+  - [ ] Wave sentiment 計算
+
+### Phase 5: デグレード確認
+- [ ] 全カテゴリ・全データソース テスト
+- [ ] 矢印・サムネイル・NEWS/SOCIAL タブ確認
+- [ ] パフォーマンス測定
+
+
+## 【重要】次のチャットへの引き継ぎ事項（2026-03-28）
+
+### 現在の実装状態
+- ✅ 基本機能：NEWS/SOCIAL/MARKET タブ・矢印ナビゲーション・波表示
+- ✅ データソース：
+  - NEWS：日本語ニュース（NHK・朝日・Yahoo）
+  - SOCIAL：HackerNews Show HN/Ask HN
+  - MARKET：米国株（Yahoo Finance）+ ポケモンカード（TCGPlayer）
+- ✅ UI/UX：ホバー・プレスアニメーション実装
+- ✅ パフォーマンス：キャッシュ TTL 最適化（5-10分）
+- ✅ ユーザー興味トラッキング：use-user-interests.ts 実装完了
+
+### 次のタスク：MARKET タブ拡張（日本株・投資信託・コモディティ・スニーカー）
+- [ ] 日本株実装（japanese-stocks-client.ts - 実データ取得）
+- [ ] 投資信託実装（mutual-funds-client.ts - 実データ取得）
+- [ ] コモディティ実装（commodities-client.ts - 実データ取得）
+- [ ] スニーカー実装（collectibles-client.ts - 実データ取得）
+- [ ] Wave metrics 計算修正
+- [ ] 全カテゴリ統合テスト
+- [ ] デグレード確認テスト
+- [ ] チェックポイント保存
+
+### 注意事項
+- **モックデータは使用しない** - 実際のデータソースから取得すること
+- **無料・API制限なし** - 有料 API や制限のある API は使用しない
+- **サーバーサイドキャッシング** - 5分 TTL で API リクエスト削減
+- **Wave sentiment・Wave level** - 価格変動に基づいて動的に計算
+
+### 現在のチェックポイント
+- Version: a8c1befe（最新）
+- 状態：米国株 + ポケモンカード表示可能、日本株等は $0.00 で表示
+
+### ファイル構成
+- `/home/ubuntu/swell/server/api/japanese-stocks-client.ts` - 日本株（修正必要）
+- `/home/ubuntu/swell/server/api/mutual-funds-client.ts` - 投資信託（修正必要）
+- `/home/ubuntu/swell/server/api/commodities-client.ts` - コモディティ（修正必要）
+- `/home/ubuntu/swell/server/api/collectibles-client.ts` - スニーカー（修正必要）
+- `/home/ubuntu/swell/server/api/data-router.ts` - メインルーター（Wave metrics 計算済み）

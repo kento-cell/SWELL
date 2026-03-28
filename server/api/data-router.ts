@@ -6,6 +6,10 @@ import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSen
 import { cacheService, CACHE_CONFIG } from './cache-service';
 import { fetchJapaneseNews } from './japanese-news-client';
 import { fetchTrendingVideos } from './video-client';
+import { getJapaneseStocks } from './japanese-stocks-client';
+import { getMutualFunds } from './mutual-funds-client';
+import { getCommodities } from './commodities-client';
+import { getPokemonCards, getSneakers } from './collectibles-client';
 
 export interface TopicData {
   id: string;
@@ -48,7 +52,7 @@ export interface VideoData {
 }
 
 /**
- * Fetch NEWS category data
+ * Fetch NEWS category data (Japanese news + HackerNews)
  */
 export async function fetchNewsData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.NEWS;
@@ -71,24 +75,24 @@ export async function fetchNewsData(): Promise<CategoryData> {
   }
 
   try {
-    const stories = await fetchHackerNewsTopStories();
+    const items = await fetchHackerNewsTopStories();
 
-    const items: TopicData[] = stories.map((story) => ({
-      id: story.id,
-      title: story.title,
-      url: story.url,
-      sourceUrl: story.sourceUrl,
-      source: 'HackerNews',
-      waveLevel: calculateWaveLevel(story.score),
-      waveSentiment: calculateWaveSentiment(story.score, story.commentCount),
-      timestamp: story.timestamp,
-      score: story.score,
-      commentCount: story.commentCount,
+    const topicItems: TopicData[] = items.map((item) => ({
+      id: item.id,
+      title: item.title,
+      url: item.url,
+      sourceUrl: item.url,
+      source: item.source,
+      waveLevel: calculateWaveLevel(item.score),
+      waveSentiment: calculateWaveSentiment(item.score, item.commentCount),
+      timestamp: item.timestamp,
+      score: item.score,
+      commentCount: item.commentCount,
     }));
 
     const result: CategoryData = {
       category: 'NEWS',
-      items,
+      items: topicItems,
       lastUpdated: Date.now(),
       source: 'HackerNews API',
     };
@@ -172,7 +176,7 @@ export async function fetchSocialData(): Promise<CategoryData> {
 }
 
 /**
- * Fetch MARKET category data
+ * Fetch MARKET category data (Stocks + Funds + Commodities + Collectibles)
  */
 export async function fetchMarketData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.MARKET;
@@ -190,32 +194,67 @@ export async function fetchMarketData(): Promise<CategoryData> {
       category: 'MARKET',
       items: [],
       lastUpdated: Date.now(),
-      source: 'YahooFinance (rate limited)',
+      source: 'Multiple APIs (rate limited)',
     };
   }
 
   try {
-    const items = await fetchMarketTrendingV2();
+    // Fetch all market data in parallel
+    const [usStocks, jpStocks, funds, commodities, pokemonCards, sneakers] = await Promise.all([
+      fetchMarketTrendingV2(), // US stocks
+      getJapaneseStocks(),
+      getMutualFunds(),
+      getCommodities(),
+      getPokemonCards(),
+      getSneakers(),
+    ]);
 
-    const topicItems: TopicData[] = items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      url: item.url,
-      sourceUrl: item.sourceUrl,
-      source: 'YahooFinance',
-      waveLevel: calculateMarketWaveLevel(item.change ?? 0),
-      waveSentiment: calculateMarketWaveSentiment(item.change ?? 0),
-      timestamp: item.timestamp,
-      score: item.score,
-      commentCount: item.commentCount,
-      description: `Price: $${item.price?.toFixed(2)} (${(item.change ?? 0) > 0 ? '+' : ''}${(item.change ?? 0).toFixed(2)}%)`,
-    }));
+    // Combine all items (stocks + collectibles)
+    const allItems = [
+      ...usStocks,
+      ...jpStocks,
+      ...funds,
+      ...commodities,
+      ...pokemonCards,
+      ...sneakers,
+    ];
+
+    // Convert to TopicData format with calculated wave metrics
+    const topicItems: TopicData[] = allItems.map((item: any) => {
+      // Calculate waveLevel based on absolute price change
+      const absChange = Math.abs(item.changePercent || 0);
+      let waveLevel: 'low' | 'medium' | 'high' = 'medium';
+      if (absChange > 5) waveLevel = 'high';
+      else if (absChange < 1) waveLevel = 'low';
+
+      // Calculate waveSentiment based on price direction
+      let waveSentiment: 'blue' | 'green' | 'yellow' | 'red' = 'green';
+      const changePercent = item.changePercent || 0;
+      if (changePercent > 3) waveSentiment = 'green';
+      else if (changePercent > 0) waveSentiment = 'yellow';
+      else if (changePercent > -3) waveSentiment = 'yellow';
+      else waveSentiment = 'red';
+
+      return {
+        id: item.id || `${item.symbol || item.type}-${Date.now()}`,
+        title: item.title || item.name || item.symbol || 'Unknown',
+        url: item.url || item.sourceUrl || '',
+        sourceUrl: item.url || item.sourceUrl || '',
+        source: item.source || item.type || 'Market Data',
+        waveLevel,
+        waveSentiment,
+        timestamp: item.timestamp || Date.now(),
+        score: item.score,
+        commentCount: item.commentCount,
+        description: item.description || `Price: ${item.price ? '$' + item.price.toFixed(2) : 'N/A'} (${(item.changePercent || 0) > 0 ? '+' : ''}${(item.changePercent || 0).toFixed(2)}%)`,
+      };
+    });
 
     const result: CategoryData = {
       category: 'MARKET',
-      items: topicItems,
+      items: topicItems.slice(0, 50), // Limit to 50 items
       lastUpdated: Date.now(),
-      source: 'YahooFinance API',
+      source: 'Yahoo Finance + TCGPlayer + StockX',
     };
 
     // Cache the result
@@ -228,7 +267,7 @@ export async function fetchMarketData(): Promise<CategoryData> {
       category: 'MARKET',
       items: [],
       lastUpdated: Date.now(),
-      source: 'YahooFinance API (error)',
+      source: 'Market APIs (error)',
     };
   }
 }
