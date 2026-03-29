@@ -584,3 +584,30 @@
 - `/home/ubuntu/swell/server/api/commodities-client.ts` - コモディティ（修正必要）
 - `/home/ubuntu/swell/server/api/collectibles-client.ts` - スニーカー（修正必要）
 - `/home/ubuntu/swell/server/api/data-router.ts` - メインルーター（Wave metrics 計算済み）
+
+
+## MARKET タブ拡張：データ取得問題調査（2026-03-29 開始）
+- [x] 米国株表示確認（AAPL, GOOGL, MSFT等 正常表示）
+- [x] 日本株・投資信託・コモディティ表示確認（$0.00 - データ取得失敗）
+- [x] Yahoo Finance API 直接呼び出しテスト（レート制限・認証エラー確認）
+- [x] API エンドポイント検証（/v10/finance/quoteSummary → 認証エラー、/v7/finance/quote → Unauthorized）
+- [ ] 代替 API 実装（Finnhub / Alpha Vantage / RapidAPI）
+- [ ] japanese-stocks-client.ts 修正
+- [ ] mutual-funds-client.ts 修正
+- [ ] commodities-client.ts 修正
+- [ ] collectibles-client.ts 修正（Pokemon cards + sneakers）
+- [ ] 全 MARKET カテゴリの実データ表示確認
+- [ ] 回帰テスト（矢印ナビゲーション・YouTube・MARKET速度）
+- [ ] チェックポイント保存
+
+**現在の状態：**
+- ✅ NEWS タブ：正常動作
+- ✅ SOCIAL タブ：正常動作（YouTube + HackerNews）
+- ⚠️ MARKET タブ：米国株のみ表示、日本株等は未実装
+- ✅ ユーザー興味トラッキング：実装済み（9/9 テスト合格）
+- ✅ サーバーサイドキャッシュ：5分 TTL 実装済み
+
+**制約：**
+- ❌ モックデータ使用禁止
+- ✅ 無料 API のみ使用（ランニングコスト $0）
+- ✅ レート制限なし API 優先
