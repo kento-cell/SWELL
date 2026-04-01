@@ -11,6 +11,7 @@ import {
   View,
   ViewToken,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const { setSelectedTopic } = useTopicContext();
   const { t } = useLocalization();
   const { themeConfig } = useThemeContext();
+  const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState<Category>('NEWS');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
@@ -138,7 +140,7 @@ export default function HomeScreen() {
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: tc.border, backgroundColor: tc.background }]}>
+      <View style={[styles.header, { borderBottomColor: tc.border, backgroundColor: tc.background, paddingTop: Math.max(insets.top, 8) }]}>
         <PixelText variant="h1" color="primary">{t('app.title', 'SWELL')}</PixelText>
         <Text style={[styles.tagline, { color: tc.muted }]}>
           {t('app.tagline', '波を読む')} · {dataSource}
@@ -289,10 +291,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
-    paddingTop: 8,
     paddingBottom: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
+    // paddingTop is set dynamically in JSX using useSafeAreaInsets()
   },
   tagline: {
     fontSize: 10,

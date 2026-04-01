@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/screen-container';
 import { PremiumSheet } from '@/components/premium-sheet';
 import { PixelText } from '@/components/pixel-text';
@@ -49,6 +50,7 @@ function SectionHeader({ title }: { title: string }) {
 export default function SettingsScreen() {
   const { plan, setPlan } = usePlan();
   const { designTheme, setDesignTheme } = useThemeContext();
+  const insets = useSafeAreaInsets();
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const [dataSource, setDataSourceState] = useState<DataSource>('hackernews');
 
@@ -66,11 +68,11 @@ export default function SettingsScreen() {
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
         <Text style={styles.headerTitle}>設定</Text>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Plan Section */}
         <SectionHeader title="プラン" />
         <View style={styles.section}>
@@ -223,10 +225,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
-    paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1F2937',
+    // paddingTop is set dynamically in JSX using useSafeAreaInsets()
   },
   headerTitle: {
     color: '#E8EDF5',

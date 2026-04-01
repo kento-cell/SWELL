@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScreenContainer } from '@/components/screen-container';
 import { WaveDisplay } from '@/components/wave-display';
@@ -17,6 +18,7 @@ export default function TopicDetailScreen() {
   const router = useRouter();
   const { selectedTopic } = useTopicContext();
   const { themeConfig } = useThemeContext();
+  const insets = useSafeAreaInsets();
   const tc = themeConfig.colors;
 
   // Use selectedTopic from context (set when user taps a card)
@@ -37,14 +39,14 @@ export default function TopicDetailScreen() {
   return (
     <ScreenContainer containerClassName="bg-background" edges={['top', 'left', 'right']}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: tc.border }]}>
+      <View style={[styles.header, { borderBottomColor: tc.border, paddingTop: Math.max(insets.top, 8), paddingHorizontal: 16 }]}>
         <PixelButton label="← 戻る" onPress={() => router.back()} variant="secondary" size="sm" />
         <View style={[styles.categoryBadge, { backgroundColor: tc.surface }]}>
           <PixelText variant="mono" color="muted">{topic.category}</PixelText>
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Wave visualization */}
         <View style={styles.waveArea}>
           <WaveDisplay
@@ -119,8 +121,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
+    // paddingTop and paddingHorizontal are set dynamically in JSX
   },
   categoryBadge: {
     paddingHorizontal: 8,
@@ -131,12 +134,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 16,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
   },
   waveArea: {
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: 4,
   },
   metaRow: {
     flexDirection: 'row',
@@ -148,7 +152,7 @@ const styles = StyleSheet.create({
   },
   legendCard: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     gap: 8,
   },
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
   },
   descriptionCard: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     gap: 8,
   },
@@ -172,7 +176,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   buttonContainer: {
-    paddingVertical: 8,
+    paddingVertical: 4,
+    paddingBottom: 16,
   },
   notFound: {
     flex: 1,
