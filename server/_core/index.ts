@@ -2,10 +2,12 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { startBatchScheduler } from "../batch/scheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -17,7 +19,7 @@ function isPortAvailable(port: number): Promise<boolean> {
   });
 }
 
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
+async function findAvailablePort(startPort: number = 3101): Promise<number> {
   for (let port = startPort; port < startPort + 20; port++) {
     if (await isPortAvailable(port)) {
       return port;
@@ -80,6 +82,13 @@ async function startServer() {
     }
   });
 
+  // Static JSON data endpoint (Cloudflare Pages互換)
+  // public/data/{news,social,market,meta}.json を配信
+  app.use("/data", express.static(
+    path.resolve(__dirname, "../../public/data"),
+    { maxAge: '2m', setHeaders: (res) => { res.setHeader('Access-Control-Allow-Origin', '*'); } }
+  ));
+
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -88,7 +97,7 @@ async function startServer() {
     }),
   );
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
+  const preferredPort = parseInt(process.env.PORT || "3101");
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
@@ -97,6 +106,8 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`[api] server listening on port ${port}`);
+    // 静的JSON定期生成を開始
+    startBatchScheduler();
   });
 }
 

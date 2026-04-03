@@ -49,8 +49,6 @@ export function CategoryTab({ categories, activeCategory, plan, onSelect }: Cate
     <View style={[styles.container, { backgroundColor: themeConfig.colors.background, borderBottomColor: themeConfig.colors.border }]}>
       {categories.map((cat) => {
         const isActive = cat === activeCategory;
-        const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(cat);
-
         return (
           <Pressable
             key={cat}
@@ -60,22 +58,14 @@ export function CategoryTab({ categories, activeCategory, plan, onSelect }: Cate
               pressed && styles.tabPressed,
             ]}
           >
-            <View style={styles.tabInner}>
-              <Text
-                style={[
-                  styles.tabText,
-                  { color: isActive ? themeConfig.colors.foreground : themeConfig.colors.muted },
-                  isLocked && { color: themeConfig.colors.muted },
-                ]}
-              >
-                {getCategoryLabel(cat)}
-              </Text>
-              {isLocked && (
-                <View style={styles.lockIcon}>
-                  <TinyLock color={themeConfig.colors.primary} />
-                </View>
-              )}
-            </View>
+            <Text
+              style={[
+                styles.tabText,
+                { color: isActive ? themeConfig.colors.foreground : themeConfig.colors.muted },
+              ]}
+            >
+              {getCategoryLabel(cat)}
+            </Text>
             {isActive && <View style={[styles.activeBar, { backgroundColor: themeConfig.colors.primary }]} />}
           </Pressable>
         );

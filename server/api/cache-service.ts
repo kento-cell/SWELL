@@ -88,7 +88,7 @@ export const cacheService = new CacheService();
 export const CACHE_CONFIG = {
   NEWS: {
     key: 'news:hackernews',
-    ttl: 300, // 5 minutes (optimized for fresh news)
+    ttl: 120, // 2 minutes
     rateLimit: { maxRequests: 1, windowSeconds: 1 }, // 1 req/sec
   },
   SOCIAL: {

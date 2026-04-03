@@ -17,6 +17,7 @@ export interface StockCardProps {
   dayHigh?: number;
   dayLow?: number;
   volume?: number;
+  currency?: string;
   onPress?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function StockCard({
   dayHigh,
   dayLow,
   volume,
+  currency = 'USD',
   onPress,
 }: StockCardProps) {
   const { themeConfig } = useThemeContext();
@@ -72,7 +74,7 @@ export function StockCard({
   const formatChange = (c: number) => (c >= 0 ? '+' : '') + c.toFixed(2);
   const formatPercent = (p: number) => (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
   const formatVolume = (v?: number) => {
-    if (!v) return 'N/A';
+    if (v == null || v <= 0) return null;
     if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
     if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
     if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
@@ -91,48 +93,47 @@ export function StockCard({
           ]}
         />
 
-        {/* Header: Symbol and change */}
+        {/* Header: Symbol and change badge */}
         <View style={styles.header}>
           <Text style={[styles.symbol, { color: tc.foreground }]}>{symbol}</Text>
           <View style={[styles.changeBadge, { backgroundColor: bgColor }]}>
             <Text style={[styles.changeText, { color: priceColor }]}>
-              {isPositive ? '📈' : '📉'} {formatPercent(changePercent)}
+              {isPositive ? '▲' : '▼'} {formatPercent(changePercent)}
             </Text>
           </View>
         </View>
 
         {/* Price section */}
         <View style={styles.priceSection}>
-          <Text style={[styles.price, { color: priceColor }]}>${formatPrice(price)}</Text>
+          <Text style={[styles.price, { color: priceColor }]}>{currency === 'JPY' ? '¥' : '$'}{currency === 'JPY' ? Math.round(price).toLocaleString() : formatPrice(price)}</Text>
           <Text style={[styles.changeAmount, { color: priceColor }]}>
             {formatChange(change)}
           </Text>
         </View>
 
-        {/* Stats grid */}
-        <View style={styles.statsGrid}>
-          {dayHigh !== undefined && (
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: tc.muted }]}>高値</Text>
-              <Text style={[styles.statValue, { color: tc.foreground }]}>${formatPrice(dayHigh)}</Text>
-            </View>
-          )}
-          {dayLow !== undefined && (
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: tc.muted }]}>安値</Text>
-              <Text style={[styles.statValue, { color: tc.foreground }]}>${formatPrice(dayLow)}</Text>
-            </View>
-          )}
-          {volume !== undefined && (
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: tc.muted }]}>出来高</Text>
-              <Text style={[styles.statValue, { color: tc.foreground }]}>{formatVolume(volume)}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Footer */}
-        <Text style={[styles.footer, { color: tc.muted }]}>タップして詳細を表示</Text>
+        {/* Stats row */}
+        {(dayHigh !== undefined || dayLow !== undefined || volume !== undefined) && (
+          <View style={[styles.statsGrid, { borderTopColor: tc.border }]}>
+            {dayHigh !== undefined && (
+              <View style={styles.statItem}>
+                <Text style={[styles.statLabel, { color: tc.muted }]}>高値</Text>
+                <Text style={[styles.statValue, { color: tc.foreground }]}>{currency === 'JPY' ? '¥' + Math.round(dayHigh).toLocaleString() : '$' + formatPrice(dayHigh)}</Text>
+              </View>
+            )}
+            {dayLow !== undefined && (
+              <View style={styles.statItem}>
+                <Text style={[styles.statLabel, { color: tc.muted }]}>安値</Text>
+                <Text style={[styles.statValue, { color: tc.foreground }]}>{currency === 'JPY' ? '¥' + Math.round(dayLow).toLocaleString() : '$' + formatPrice(dayLow)}</Text>
+              </View>
+            )}
+            {formatVolume(volume) && (
+              <View style={styles.statItem}>
+                <Text style={[styles.statLabel, { color: tc.muted }]}>出来高</Text>
+                <Text style={[styles.statValue, { color: tc.foreground }]}>{formatVolume(volume)}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -146,8 +147,8 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -157,65 +158,58 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 16,
+    borderRadius: 12,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
     zIndex: 1,
   },
   symbol: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
   changeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   changeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   priceSection: {
-    marginBottom: 20,
+    marginBottom: 10,
     zIndex: 1,
   },
   price: {
-    fontSize: 40,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   changeAmount: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '500',
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 16,
-    paddingTop: 16,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
     zIndex: 1,
   },
   statItem: {
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: 10,
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  footer: {
     fontSize: 12,
-    textAlign: 'center',
-    marginTop: 12,
-    zIndex: 1,
+    fontWeight: '600',
   },
 });

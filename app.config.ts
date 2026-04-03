@@ -85,6 +85,7 @@ const config: ExpoConfig = {
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
+    "@bacons/apple-targets",
     "expo-router",
     [
       "expo-audio",

@@ -176,34 +176,27 @@ export const dataRouter = router({
       try {
         let data;
         switch (category) {
-          case 'NEWS':
-            // 日本語ニュース（RSS + LLM 要約）を優先、失敗時は HackerNews にフォールバック
-            try {
-              const japaneseTopics = await fetchJapaneseNews();
-              if (japaneseTopics.length > 0) {
-                data = {
-                  category: 'NEWS' as const,
-                  items: japaneseTopics.map((t) => ({
-                    id: t.id,
-                    title: t.title,
-                    url: t.sourceUrl || '',
-                    sourceUrl: t.sourceUrl || '',
-                    source: t.source,
-                    waveLevel: t.waveLevel,
-                    waveSentiment: t.waveSentiment,
-                    timestamp: new Date(t.publishedAt).getTime(),
-                    description: t.summary,
-                  })),
-                  lastUpdated: Date.now(),
-                  source: '日本語ニュース (NHK・朝日・毎日・Yahoo)',
-                };
-              } else {
-                data = await fetchNewsData();
-              }
-            } catch {
-              data = await fetchNewsData();
-            }
+          case 'NEWS': {
+            // 日本語ニュースのみ（HackerNewsフォールバック廃止）
+            const japaneseTopics = await fetchJapaneseNews();
+            data = {
+              category: 'NEWS' as const,
+              items: japaneseTopics.map((t) => ({
+                id: t.id,
+                title: t.title,
+                url: t.sourceUrl || '',
+                sourceUrl: t.sourceUrl || '',
+                source: t.source,
+                waveLevel: t.waveLevel,
+                waveSentiment: t.waveSentiment,
+                timestamp: new Date(t.publishedAt).getTime(),
+                description: t.summary,
+              })),
+              lastUpdated: Date.now(),
+              source: '日本語ニュース (NHK・朝日・BBC・Yahoo)',
+            };
             break;
+          }
           case 'SOCIAL':
             // SOCIALタブはHackerNews Show HN/Ask HNコミュニティコンテンツを表示
             data = await fetchSocialData();
@@ -229,6 +222,63 @@ export const dataRouter = router({
           },
         };
       }
+    }),
+  /**
+   * Search stock symbols via Yahoo Finance
+   */
+  searchSymbol: publicProcedure
+    .input(z.string().min(1).max(20))
+    .query(async ({ input: query }) => {
+      try {
+        const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&lang=ja-JP`;
+        const response = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        });
+        if (!response.ok) return { results: [] };
+        const data = await response.json() as any;
+        const results = (data.quotes || [])
+          .filter((q: any) => q.symbol && q.quoteType !== 'OPTION')
+          .map((q: any) => ({
+            symbol: q.symbol,
+            name: q.shortname || q.longname || q.symbol,
+            exchange: q.exchDisp || q.exchange || '',
+            type: q.quoteType || '',
+          }));
+        return { results };
+      } catch (error) {
+        console.error('[Search] Error:', error);
+        return { results: [] };
+      }
+    }),
+
+  /**
+   * Fetch custom symbol quotes (for user watchlist)
+   */
+  getCustomQuotes: publicProcedure
+    .input(z.array(z.string()).min(1).max(30))
+    .query(async ({ input: symbols }) => {
+      const { fetchStockPriceFromYahoo } = await import('./market-client-v2');
+      const results = await Promise.allSettled(
+        symbols.map(async (symbol) => {
+          const stock = await fetchStockPriceFromYahoo(symbol);
+          if (!stock) return null;
+          return {
+            symbol,
+            price: stock.price,
+            change: stock.change,
+            changePercent: stock.changePercent,
+            currency: stock.currency || 'USD',
+            dayHigh: stock.dayHigh,
+            dayLow: stock.dayLow,
+            volume: stock.volume,
+          };
+        })
+      );
+      return {
+        quotes: results
+          .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+          .map((r) => r.value),
+      };
     }),
 });
 

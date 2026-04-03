@@ -26,6 +26,16 @@ export interface Topic {
   thumbnail?: string;    // サムネイル画像URL
   views?: string;        // 再生数
   duration?: string;     // 動画長さ
+  // マーケットデータ（MARKET カテゴリ用）
+  marketPrice?: number;
+  marketChange?: number;
+  marketChangePercent?: number;
+  marketCurrency?: string;
+  marketSymbol?: string;
+  marketDayHigh?: number;
+  marketDayLow?: number;
+  marketVolume?: number;
+  marketGroup?: string;
 }
 
 export type PlanType = 'free' | 'premium';

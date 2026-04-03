@@ -3,6 +3,7 @@ import { fetchAllSocialTrending, calculateSocialWaveSentiment } from './rss-soci
 import { fetchHNSocialTrending, calculateSocialWaveSentiment as calculateHNSocialWaveSentiment, calculateSocialWaveLevel as calculateHNSocialWaveLevel } from './hackernews-social-client';
 import { getBlueskySocialContent } from './bluesky-social-client';
 import { fetchMarketTrendingV2, calculateMarketWaveLevel, calculateMarketWaveSentiment } from './market-client-v2';
+import { fetchBuzzContent, calculateBuzzLevel, calculateBuzzSentiment } from './buzz-client';
 import { cacheService, CACHE_CONFIG } from './cache-service';
 import { fetchJapaneseNews } from './japanese-news-client';
 import { fetchTrendingVideos } from './video-client';
@@ -113,65 +114,48 @@ export async function fetchNewsData(): Promise<CategoryData> {
 }
 
 /**
- * Fetch SOCIAL category data (HackerNews Show HN + Ask HN + Bluesky)
+ * Fetch SOCIAL category data (はてブ + Togetter + YouTube)
+ * 日本語バズコンテンツを提供
  */
 export async function fetchSocialData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.SOCIAL;
 
-  // Check cache first
   const cached = cacheService.get<CategoryData>(config.key);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
 
-  // Check rate limit
   if (!cacheService.checkRateLimit(config.key, config.rateLimit.maxRequests, config.rateLimit.windowSeconds)) {
-    console.warn('SOCIAL: Rate limit exceeded, using stale cache or empty data');
-    return {
-      category: 'SOCIAL',
-      items: [],
-      lastUpdated: Date.now(),
-      source: 'HackerNews (Show HN / Ask HN)',
-    };
+    return { category: 'SOCIAL', items: [], lastUpdated: Date.now(), source: 'バズ (rate limited)' };
   }
 
   try {
-    // Fetch from HackerNews (Bluesky API endpoint not implemented)
-    const hnItems = await fetchHNSocialTrending(20);
+    const buzzItems = await fetchBuzzContent();
 
-    // Convert HackerNews items
-    const hnTopicItems: TopicData[] = hnItems.map((item) => ({
+    const topicItems: TopicData[] = buzzItems.map((item) => ({
       id: item.id,
       title: item.title,
       url: item.url,
-      sourceUrl: item.sourceUrl,
+      sourceUrl: item.url,
       source: item.source,
-      waveLevel: calculateHNSocialWaveLevel(item.score),
-      waveSentiment: calculateHNSocialWaveSentiment(item.score, item.commentCount),
+      waveLevel: calculateBuzzLevel(item.bookmarks),
+      waveSentiment: calculateBuzzSentiment(item.title),
       timestamp: item.timestamp,
-      score: item.score,
-      commentCount: item.commentCount,
+      score: item.bookmarks || 0,
+      commentCount: 0,
+      description: item.description,
     }));
 
     const result: CategoryData = {
       category: 'SOCIAL',
-      items: hnTopicItems.slice(0, 20),
+      items: topicItems.slice(0, 20),
       lastUpdated: Date.now(),
-      source: 'HackerNews (Show HN / Ask HN)',
+      source: 'はてブ · Togetter',
     };
 
-    // Cache the result
     cacheService.set(config.key, result, config.ttl);
-
     return result;
   } catch (error) {
     console.error('Error fetching SOCIAL data:', error);
-    return {
-      category: 'SOCIAL',
-      items: [],
-      lastUpdated: Date.now(),
-      source: 'HackerNews + Bluesky (error)',
-    };
+    return { category: 'SOCIAL', items: [], lastUpdated: Date.now(), source: 'バズ (error)' };
   }
 }
 
@@ -199,25 +183,8 @@ export async function fetchMarketData(): Promise<CategoryData> {
   }
 
   try {
-    // Fetch all market data in parallel
-    const [usStocks, jpStocks, funds, commodities, pokemonCards, sneakers] = await Promise.all([
-      fetchMarketTrendingV2(), // US stocks
-      getJapaneseStocks(),
-      getMutualFunds(),
-      getCommodities(),
-      getPokemonCards(),
-      getSneakers(),
-    ]);
-
-    // Combine all items (stocks + collectibles)
-    const allItems = [
-      ...usStocks,
-      ...jpStocks,
-      ...funds,
-      ...commodities,
-      ...pokemonCards,
-      ...sneakers,
-    ];
+    // 全てYahoo Finance経由で取得（コスト0・認証不要）
+    const allItems = await fetchMarketTrendingV2();
 
     // Convert to TopicData format with calculated wave metrics
     const topicItems: TopicData[] = allItems.map((item: any) => {
@@ -247,6 +214,16 @@ export async function fetchMarketData(): Promise<CategoryData> {
         score: item.score,
         commentCount: item.commentCount,
         description: item.description || `Price: ${item.price ? '$' + item.price.toFixed(2) : 'N/A'} (${(item.changePercent || 0) > 0 ? '+' : ''}${(item.changePercent || 0).toFixed(2)}%)`,
+        // Market-specific fields
+        marketPrice: item.price,
+        marketChange: item.change,
+        marketChangePercent: item.changePercent,
+        marketCurrency: item.currency || 'USD',
+        marketSymbol: item.symbol,
+        marketDayHigh: item.dayHigh,
+        marketDayLow: item.dayLow,
+        marketVolume: item.volume,
+        marketGroup: item.group,
       };
     });
 
@@ -276,8 +253,28 @@ export async function fetchMarketData(): Promise<CategoryData> {
  * Fetch all category data in parallel
  */
 export async function fetchAllCategoryData() {
+  // 日本語ニュース優先のラッパー
+  async function fetchJapaneseNewsOrFallback() {
+    try {
+      const topics = await fetchJapaneseNews();
+      if (topics.length > 0) {
+        return {
+          category: 'NEWS' as const,
+          items: topics.map((t) => ({
+            id: t.id, title: t.title, url: t.sourceUrl || '', sourceUrl: t.sourceUrl || '',
+            source: t.source, waveLevel: t.waveLevel, waveSentiment: t.waveSentiment,
+            timestamp: new Date(t.publishedAt).getTime(), description: t.summary,
+          })),
+          lastUpdated: Date.now(),
+          source: '日本語ニュース',
+        };
+      }
+    } catch { /* fall through */ }
+    return { category: 'NEWS' as const, items: [] as any[], lastUpdated: Date.now(), source: 'エラー' };
+  }
+
   const [newsData, socialData, marketData] = await Promise.all([
-    fetchNewsData(),
+    fetchJapaneseNewsOrFallback(),
     fetchSocialData(),
     fetchMarketData(),
   ]);

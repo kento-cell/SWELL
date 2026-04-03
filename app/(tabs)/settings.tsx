@@ -103,35 +103,6 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Theme Section */}
-        <SectionHeader title="デザイン" />
-        <View style={[styles.section, { padding: 16 }]}>
-          <View style={{ gap: 12 }}>
-            {(['normal', 'cli', '8bit'] as const).map((theme) => (
-              <Pressable
-                key={theme}
-                onPress={() => setDesignTheme(theme)}
-                style={({ pressed }) => [
-                  styles.themeOption,
-                  designTheme === theme && styles.themeOptionActive,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <View style={styles.themeOptionContent}>
-                  <View
-                    style={[
-                      styles.themeIndicator,
-                      designTheme === theme && styles.themeIndicatorActive,
-                    ]}
-                  />
-                  <PixelText variant="body">
-                    {theme === 'normal' ? 'ノーマル' : theme === 'cli' ? 'CLI' : '8bit'}
-                  </PixelText>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        </View>
 
         {/* Data Source Section */}
         <SectionHeader title="データソース" />

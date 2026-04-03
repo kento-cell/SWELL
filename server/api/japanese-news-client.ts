@@ -14,8 +14,9 @@ interface RawNewsItem {
   source: string;
 }
 
-// 日本語ニュース RSS フィード一覧
+// 日本語ニュース RSS フィード一覧（国内 + 海外の日本語ソース）
 const JAPAN_NEWS_FEEDS = [
+  // 国内ニュース
   {
     url: 'https://www3.nhk.or.jp/rss/news/cat0.xml',
     source: 'NHK',
@@ -31,6 +32,15 @@ const JAPAN_NEWS_FEEDS = [
   {
     url: 'https://news.yahoo.co.jp/rss/topics/top-picks.xml',
     source: 'Yahoo!ニュース',
+  },
+  // 海外・国際ニュース（日本語）
+  {
+    url: 'https://www3.nhk.or.jp/rss/news/cat6.xml',
+    source: 'NHK国際',
+  },
+  {
+    url: 'https://feeds.bbci.co.uk/japanese/rss.xml',
+    source: 'BBC日本語',
   },
 ];
 
@@ -132,6 +142,56 @@ function extractTags(title: string): string[] {
 }
 
 /**
+ * 要約生成（LLM不使用・コスト0）
+ *
+ * 1. descriptionがタイトルと異なり十分な長さがあれば要約として使用
+ * 2. 同じ場合はキーワードからカテゴリ＋文脈情報を生成
+ */
+function generateSummary(title: string, description: string): string {
+  // descriptionがタイトルと実質同じかチェック
+  const cleanDesc = description.replace(/\s+/g, '').replace(/…$/, '');
+  const cleanTitle = title.replace(/\s+/g, '');
+  const isSameAsTitle = !cleanDesc || cleanDesc === cleanTitle || cleanTitle.includes(cleanDesc) || cleanDesc.includes(cleanTitle) || cleanDesc.length < 15;
+
+  if (!isSameAsTitle && description.length > 20) {
+    return description.slice(0, 150) + (description.length > 150 ? '…' : '');
+  }
+
+  // descriptionが使えない場合 → タイトルからコンテキストを生成
+  return generateContextFromTitle(title);
+}
+
+/**
+ * タイトルからコンテキスト情報を生成（LLM不使用）
+ */
+function generateContextFromTitle(title: string): string {
+  const contextMap: [string[], string][] = [
+    [['地震', '震度', '津波', '台風', '大雨', '洪水', '噴火'], '防災・気象情報'],
+    [['逮捕', '容疑', '事件', '殺人', '詐欺', '窃盗', '暴行'], '事件・事故'],
+    [['死亡', '事故', '火災', '墜落', '衝突', '落下'], '事故・災害'],
+    [['首相', '大統領', '政府', '国会', '法案', '選挙', '与党', '野党', '内閣'], '政治'],
+    [['株', '円安', '円高', 'GDP', '景気', '物価', '投資', '経済'], '経済・マーケット'],
+    [['米国', 'アメリカ', '中国', '韓国', 'ロシア', '欧州', 'EU', 'NATO', 'ウクライナ', 'イラン', 'イスラエル'], '国際情勢'],
+    [['AI', 'IT', 'デジタル', 'アプリ', 'マイクロソフト', 'Google', 'Apple', 'OpenAI'], 'テクノロジー'],
+    [['優勝', '選手', '試合', 'ゴルフ', '野球', 'サッカー', 'テニス'], 'スポーツ'],
+    [['関税', '貿易', '輸入', '輸出', '制裁', '協定'], '貿易・通商'],
+    [['医療', '病院', 'ワクチン', '感染', '患者', '治療'], '医療・健康'],
+  ];
+
+  const matched: string[] = [];
+  for (const [keywords, label] of contextMap) {
+    if (keywords.some((kw) => title.includes(kw))) {
+      matched.push(label);
+    }
+  }
+
+  if (matched.length > 0) {
+    return matched.slice(0, 2).join(' · ');
+  }
+  return '';
+}
+
+/**
  * RSS XML をパースして記事リストを取得
  */
 function parseRSS(xml: string, source: string): RawNewsItem[] {
@@ -216,11 +276,9 @@ function convertToTopics(items: RawNewsItem[]): Topic[] {
     const waveSentiment = detectSentiment(item.title, item.description);
     const tags = extractTags(item.title);
 
-    // description が短い/空の場合はタイトルを使用
-    const summary =
-      item.description && item.description.length > 10
-        ? item.description.slice(0, 150) + (item.description.length > 150 ? '…' : '')
-        : item.title;
+    // 要約生成（LLM不使用・コスト0）
+    // descriptionがタイトルと同じ or 短すぎる場合はキーワードから要約を生成
+    const summary = generateSummary(item.title, item.description);
 
     return {
       id: `japan-${Date.now()}-${i}`,
@@ -238,9 +296,9 @@ function convertToTopics(items: RawNewsItem[]): Topic[] {
   });
 }
 
-// キャッシュ（5分 — 高速ロード優先）
+// キャッシュ（2分）
 let cache: { data: Topic[]; timestamp: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 2 * 60 * 1000;
 
 /**
  * メイン関数: 日本語ニュースを取得してキーワード分析（コスト0）
@@ -286,8 +344,26 @@ export async function fetchJapaneseNews(): Promise<Topic[]> {
     return getFallbackTopics();
   }
 
+  // ソース別にグループ化し、ラウンドロビンで均等に混合（国際ニュースも確実に含める）
+  const bySource: Record<string, RawNewsItem[]> = {};
+  for (const item of allItems) {
+    if (!bySource[item.source]) bySource[item.source] = [];
+    bySource[item.source].push(item);
+  }
+  const sources = Object.keys(bySource);
+  const mixed: RawNewsItem[] = [];
+  let round = 0;
+  while (mixed.length < 25 && round < 10) {
+    for (const src of sources) {
+      if (bySource[src][round]) {
+        mixed.push(bySource[src][round]);
+      }
+    }
+    round++;
+  }
+
   // キーワードベース変換（LLM不使用・コスト0）
-  const topics = convertToTopics(allItems.slice(0, 20));
+  const topics = convertToTopics(mixed.slice(0, 25));
 
   // キャッシュ更新
   cache = { data: topics, timestamp: Date.now() };

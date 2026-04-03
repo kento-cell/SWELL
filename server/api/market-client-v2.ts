@@ -35,10 +35,68 @@ export interface MarketItem {
   symbol?: string;
   price?: number;
   change?: number;
+  changePercent?: number;
+  currency?: string;
+  dayHigh?: number;
+  dayLow?: number;
+  volume?: number;
+  group?: string; // カテゴリグループ
 }
 
-// Top stocks to monitor
-const TOP_STOCKS = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'NVDA', 'META', 'NFLX'];
+// シンボル定義（名前 + グループ）
+interface SymbolDef {
+  symbol: string;
+  name: string;
+  group: string;
+}
+
+const SYMBOLS: SymbolDef[] = [
+  // 主要指標
+  { symbol: '^N225', name: '日経平均', group: '主要指標' },
+  { symbol: '^GSPC', name: 'S&P 500', group: '主要指標' },
+  { symbol: 'USDJPY=X', name: 'ドル/円', group: '主要指標' },
+  // 為替
+  { symbol: 'EURJPY=X', name: 'ユーロ/円', group: '為替' },
+  { symbol: 'GBPJPY=X', name: 'ポンド/円', group: '為替' },
+  { symbol: 'AUDJPY=X', name: '豪ドル/円', group: '為替' },
+  { symbol: 'CNYJPY=X', name: '人民元/円', group: '為替' },
+  { symbol: 'KRWJPY=X', name: 'ウォン/円', group: '為替' },
+  { symbol: 'EURUSD=X', name: 'ユーロ/ドル', group: '為替' },
+  // 暗号通貨
+  { symbol: 'BTC-USD', name: 'ビットコイン', group: '暗号通貨' },
+  { symbol: 'ETH-USD', name: 'イーサリアム', group: '暗号通貨' },
+  { symbol: 'SOL-USD', name: 'ソラナ', group: '暗号通貨' },
+  { symbol: 'XRP-USD', name: 'リップル', group: '暗号通貨' },
+  { symbol: 'DOGE-USD', name: 'ドージ', group: '暗号通貨' },
+  { symbol: 'ADA-USD', name: 'カルダノ', group: '暗号通貨' },
+  { symbol: 'AVAX-USD', name: 'アバランチ', group: '暗号通貨' },
+  { symbol: 'LINK-USD', name: 'チェーンリンク', group: '暗号通貨' },
+  { symbol: 'DOT-USD', name: 'ポルカドット', group: '暗号通貨' },
+  { symbol: 'MATIC-USD', name: 'ポリゴン', group: '暗号通貨' },
+  // コモディティ（金銀プラチナ）
+  { symbol: 'GC=F', name: '金（ゴールド）', group: 'コモディティ' },
+  { symbol: 'SI=F', name: '銀（シルバー）', group: 'コモディティ' },
+  { symbol: 'PL=F', name: 'プラチナ', group: 'コモディティ' },
+  // 投資信託（連動ETF）
+  { symbol: 'VT', name: 'オルカン(全世界)', group: '投資信託' },
+  { symbol: 'VOO', name: 'S&P500', group: '投資信託' },
+  { symbol: 'VTI', name: '全米株式', group: '投資信託' },
+  { symbol: 'QQQ', name: 'NASDAQ100', group: '投資信託' },
+  { symbol: 'VWO', name: '新興国株式', group: '投資信託' },
+  { symbol: 'VYM', name: '高配当', group: '投資信託' },
+  // 米国株
+  { symbol: 'AAPL', name: 'Apple', group: '米国株' },
+  { symbol: 'GOOGL', name: 'Google', group: '米国株' },
+  { symbol: 'MSFT', name: 'Microsoft', group: '米国株' },
+  { symbol: 'TSLA', name: 'Tesla', group: '米国株' },
+  { symbol: 'NVDA', name: 'NVIDIA', group: '米国株' },
+  { symbol: 'META', name: 'Meta', group: '米国株' },
+];
+
+// 後方互換用
+const TOP_STOCKS = SYMBOLS.map(s => s.symbol);
+const SYMBOL_NAMES: Record<string, string> = Object.fromEntries(SYMBOLS.map(s => [s.symbol, s.name]));
+const SYMBOL_GROUPS: Record<string, string> = Object.fromEntries(SYMBOLS.map(s => [s.symbol, s.group]));
 
 /**
  * Try multiple Yahoo Finance API endpoints with fallback
@@ -69,7 +127,7 @@ async function tryYahooFinanceEndpoints(symbol: string): Promise<any> {
     },
     // Endpoint 3: v8/finance/chart (fallback)
     async () => {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`;
       const response = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       });
@@ -77,12 +135,21 @@ async function tryYahooFinanceEndpoints(symbol: string): Promise<any> {
       const data = await response.json() as any;
       const result = data?.chart?.result?.[0];
       if (!result) return null;
+      const meta = result.meta;
       const quote = result.indicators?.quote?.[0];
-      if (!quote) return null;
+      const closes = quote?.close?.filter((v: any) => v != null) || [];
+      const highs = quote?.high?.filter((v: any) => v != null) || [];
+      const lows = quote?.low?.filter((v: any) => v != null) || [];
+      const volumes = quote?.volume?.filter((v: any) => v != null) || [];
+      const currentPrice = meta?.regularMarketPrice || closes[closes.length - 1] || 0;
+      const previousClose = meta?.chartPreviousClose || meta?.previousClose || (closes.length > 1 ? closes[closes.length - 2] : closes[0]) || currentPrice;
       return {
-        regularMarketPrice: { raw: quote.close?.[quote.close.length - 1] || 0 },
-        regularMarketPreviousClose: { raw: quote.open?.[0] || quote.close?.[0] || 0 },
-        currency: 'USD',
+        regularMarketPrice: currentPrice,
+        regularMarketPreviousClose: previousClose,
+        regularMarketDayHigh: highs.length > 0 ? Math.max(...highs.slice(-1)) : undefined,
+        regularMarketDayLow: lows.length > 0 ? Math.min(...lows.slice(-1)) : undefined,
+        regularMarketVolume: volumes.length > 0 ? volumes[volumes.length - 1] : undefined,
+        currency: meta?.currency || 'USD',
       };
     },
   ];
@@ -162,30 +229,42 @@ export async function fetchStockPriceFromYahoo(symbol: string): Promise<StockPri
 export async function fetchMarketTrendingV2(): Promise<MarketItem[]> {
   const items: MarketItem[] = [];
 
-  // Fetch real stock prices from Yahoo Finance API
-  // Each user calls independently, but client-side caching reduces actual API calls
-  for (const symbol of TOP_STOCKS) {
-    try {
+  // Fetch all symbols in parallel for speed
+  const results = await Promise.allSettled(
+    TOP_STOCKS.map(async (symbol) => {
       const stock = await fetchStockPriceFromYahoo(symbol);
-      if (stock) {
-        items.push({
-          id: `stock_${symbol}`,
-          title: `${symbol} - $${stock.price.toFixed(2)}`,
-          url: `https://finance.yahoo.com/quote/${symbol}`,
-          score: Math.abs(stock.changePercent * 10),
-          commentCount: 0,
-          source: 'yahoo-finance',
-          sourceUrl: `https://finance.yahoo.com/quote/${symbol}`,
-          timestamp: stock.timestamp,
-          symbol,
-          price: stock.price,
-          change: stock.changePercent,
-        });
-      }
-    } catch (error) {
-      console.error(`[Market] Error processing ${symbol}:`, error instanceof Error ? error.message : String(error));
-      // Continue with next symbol
-    }
+      return { symbol, stock };
+    })
+  );
+
+  for (const result of results) {
+    if (result.status !== 'fulfilled' || !result.value.stock) continue;
+    const { symbol, stock } = result.value;
+    const displayName = SYMBOL_NAMES[symbol] || symbol;
+    const currency = stock.currency || 'USD';
+    const priceStr = currency === 'JPY'
+      ? `¥${Math.round(stock.price).toLocaleString()}`
+      : `$${stock.price.toFixed(2)}`;
+
+    items.push({
+      id: `stock_${symbol}`,
+      title: `${displayName} - ${priceStr}`,
+      url: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`,
+      score: Math.abs(stock.changePercent * 10),
+      commentCount: 0,
+      source: 'yahoo-finance',
+      sourceUrl: `https://finance.yahoo.com/quote/${encodeURIComponent(symbol)}`,
+      timestamp: stock.timestamp,
+      symbol: displayName,
+      price: stock.price,
+      change: stock.change,
+      changePercent: stock.changePercent,
+      currency,
+      dayHigh: stock.dayHigh,
+      dayLow: stock.dayLow,
+      volume: stock.volume,
+      group: SYMBOL_GROUPS[symbol] || '米国株',
+    });
   }
 
   return items;

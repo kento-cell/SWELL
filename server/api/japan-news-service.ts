@@ -191,9 +191,9 @@ async function summarizeWithLLM(
   }
 }
 
-// キャッシュ（5分）
+// キャッシュ（2分）
 let cache: { data: SummarizedNewsItem[]; timestamp: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 2 * 60 * 1000;
 
 // メイン関数: 日本語ニュースを取得して要約
 export async function fetchJapanNews(): Promise<SummarizedNewsItem[]> {

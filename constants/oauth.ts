@@ -45,8 +45,14 @@ export function getApiBaseUrl(): string {
     }
   }
 
-  // Fallback to empty (will use relative URL)
-  return "";
+  // On web (localhost), derive API URL from current page
+  if (ReactNative.Platform.OS === "web" && typeof window !== "undefined" && window.location) {
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:3101`;
+  }
+
+  // On native, use localhost
+  return "http://localhost:3101";
 }
 
 export const SESSION_TOKEN_KEY = "app_session_token";
