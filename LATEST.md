@@ -136,7 +136,7 @@ SwiftUI + WidgetKit で NEWS/SOCIAL/MARKET タブ切替対応。Small/Medium/Lar
 ## 次のステップ
 
 1. **セキュリティ修正**: High 2件 (CORS allowlist, OAuth state nonce) を別セッションで腰を据えて実施
-2. **main → feature マージ**: `c323882` の security findings を feature に取り込む
-3. **TypeScript 事前エラーの解消**: `FREE_MARKET_GROUPS` hoisting、`accent` プロパティ欠落
-4. **実機テスト**: Expo Go で全機能が動作するか確認
-5. **Redis キャッシュ導入**: `REDIS_CACHING_GUIDE.md` の設計に基づいて実装
+   - 最初に読むべきファイル: `SECURITY_REVIEW_20260406.md`, `server/_core/index.ts`, `server/_core/oauth.ts`, `server/_core/sdk.ts`, `app/oauth/callback.tsx`
+2. **TypeScript 事前エラーの解消**: `FREE_MARKET_GROUPS` hoisting、`accent` プロパティ欠落
+3. **実機テスト**: Expo Go で全機能が動作するか確認
+4. **Redis キャッシュ導入**: `REDIS_CACHING_GUIDE.md` の設計に基づいて実装
