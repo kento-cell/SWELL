@@ -185,19 +185,22 @@ export function PixelArrow({
     );
   }
 
-  // For native, use View with onPress
+  // For native, use Pressable so onPress actually fires.
   const arrowColor = disabled ? '#374151' : '#6B7280';
   const lockColor = '#A78BFA';
 
   return (
-    <View
+    <Pressable
+      onPress={handlePress}
+      onPressIn={() => !disabled && setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      disabled={disabled}
+      hitSlop={8}
       style={[
         styles.button,
         disabled && styles.disabled,
         isPressed && !disabled && { opacity: 0.6 },
       ]}
-      onTouchStart={() => !disabled && setIsPressed(true)}
-      onTouchEnd={() => setIsPressed(false)}
     >
       <View style={styles.inner} pointerEvents="none">
         <PixelTriangle direction={direction} size={size} color={arrowColor} />
@@ -207,7 +210,7 @@ export function PixelArrow({
           </View>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 

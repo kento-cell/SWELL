@@ -67,5 +67,8 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 };
 
 // Freeプランでアクセス可能なカテゴリ
-export const FREE_CATEGORIES: Category[] = ['NEWS', 'MARKET'];
-export const PREMIUM_CATEGORIES: Category[] = ['SOCIAL'];
+// v2以降はカテゴリロックを廃止し、全カテゴリ閲覧可。
+// Premium差別化はアイテム数制限とMARKETサブカテゴリ制限で行う
+// (app/(tabs)/index.tsx の FREE_ITEM_LIMIT / FREE_MARKET_GROUPS 参照)。
+export const FREE_CATEGORIES: Category[] = ['NEWS', 'SOCIAL', 'MARKET'];
+export const PREMIUM_CATEGORIES: Category[] = [];

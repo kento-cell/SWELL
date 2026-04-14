@@ -136,8 +136,10 @@ export default function HomeScreen() {
     return raw;
   })();
 
-  // SOCIAL カテゴリは Premium ロックを表示しない（YouTube/TikTok ビデオは常に表示）
-  const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory) && activeCategory !== 'SOCIAL';
+  // v2以降、全カテゴリが Free で閲覧可能。
+  // 差別化はアイテム数と MARKET サブカテゴリの制限で実施するため、
+  // カテゴリ単位のロック表示はもう出さない。
+  const isLocked = plan === 'free' && !FREE_CATEGORIES.includes(activeCategory);
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);

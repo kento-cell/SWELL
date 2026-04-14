@@ -114,8 +114,10 @@ export async function fetchNewsData(): Promise<CategoryData> {
 }
 
 /**
- * Fetch SOCIAL category data (はてブ + Togetter + YouTube)
- * 日本語バズコンテンツを提供
+ * Fetch SOCIAL category data (はてブ + Togetter).
+ * YouTube は fetchVideosData / getVideos / VideoCard に別系統で残置されているが、
+ * v2 時点で SOCIAL タブからは切り離されている(再統合時に復活予定)。
+ * 日本語バズコンテンツを提供する。
  */
 export async function fetchSocialData(): Promise<CategoryData> {
   const config = CACHE_CONFIG.SOCIAL;

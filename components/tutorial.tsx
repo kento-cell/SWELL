@@ -26,7 +26,7 @@ const STEPS = [
   {
     title: 'カテゴリを選ぶ',
     description:
-      'NEWS / SOCIAL / MARKET の\n3つのカテゴリがあります。\n\nSOCIAL と MARKET は\nPremiumプランで利用できます。',
+      'NEWS / SOCIAL / MARKET の\n3つのカテゴリ、\nすべて利用できます。\n\nPremiumプランで\nアイテム数と\nMARKET全ジャンルが解放されます。',
     colorHint: '#A78BFA',
   },
 ];

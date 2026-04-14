@@ -2,27 +2,25 @@
 
 ## 発見されたデグレード問題
 
-### 1. 矢印キーの無反応問題（重大）
+### 1. 矢印キーの無反応問題（重大）→ ✅ 修正済み (2026-04-14)
 **症状:**
 - 矢印ボタンのクリックが無反応
 - スライド自体は反応しているが、ページ数表示（ページインジケータ）がカード枚数に追従していない
 
-**根本原因の推測:**
-- `pixel-arrow.tsx` で `onClick` ハンドラを追加したが、実際のページネーション状態管理と同期していない可能性
-- ページインジケータが古い状態を表示している（状態管理のバグ）
-- React Native Web での `Pressable` コンポーネントと状態管理の連携が不完全
+**根本原因（2026-04-14 特定）:**
+- `components/pixel-arrow.tsx` の **native 分岐**(`Platform.OS !== 'web'`) が `<View>` + `onTouchStart`/`onTouchEnd` のみで **`onPress` を呼んでいなかった**
+- Web 分岐は `<button onClick>` で正しく動作していたが、iOS/Android 実機で矢印が無反応
+- 過去の `Pressable → TouchableOpacity` など複数の試行錯誤の痕跡が残っていたが、native 分岐の実装だけ取り残されていた
 
-**修正方法（次回実装時）:**
-1. ページネーション状態管理を確認（`HomeScreen` の `currentPage` 状態）
-2. 矢印ボタンのクリックハンドラが正しく状態を更新しているか検証
-3. ページインジケータコンポーネントが最新の状態を参照しているか確認
-4. テストを書いて、ボタンクリック → 状態更新 → UI反映 の流れを検証
+**修正内容:**
+- native 分岐を `<Pressable onPress={handlePress}>` に変更
+- `onPressIn`/`onPressOut` で `isPressed` 状態を管理
+- `hitSlop={8}` を付与してタップ領域を拡張
+- Codex CLI による独立監査で発見されたバグ
 
-**チェックリスト:**
-- [ ] `app/(tabs)/index.tsx` の `currentPage` 状態管理を確認
-- [ ] 矢印ボタンの `onPress` ハンドラが `setCurrentPage()` を呼び出しているか確認
-- [ ] ページインジケータが `currentPage` を参照しているか確認
-- [ ] React DevTools で状態変化を追跡してデバッグ
+**教訓:**
+- Web と Native で分岐するコンポーネントは、両方の分岐を必ずテストする
+- `Pressable` import してあるのに使っていない場合は疑う
 
 ---
 

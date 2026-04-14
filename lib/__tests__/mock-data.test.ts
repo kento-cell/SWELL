@@ -33,12 +33,11 @@ describe('Mock Data', () => {
     }
   });
 
-  it('FREE_CATEGORIES should only include NEWS', () => {
-    expect(FREE_CATEGORIES).toEqual(['NEWS']);
+  it('FREE_CATEGORIES should include all three categories (v2 freemium)', () => {
+    expect(FREE_CATEGORIES).toEqual(['NEWS', 'SOCIAL', 'MARKET']);
   });
 
-  it('PREMIUM_CATEGORIES should include SOCIAL and MARKET', () => {
-    expect(PREMIUM_CATEGORIES).toContain('SOCIAL');
-    expect(PREMIUM_CATEGORIES).toContain('MARKET');
+  it('PREMIUM_CATEGORIES should be empty (v2 differentiates by item limits, not category lock)', () => {
+    expect(PREMIUM_CATEGORIES).toEqual([]);
   });
 });

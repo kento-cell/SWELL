@@ -71,15 +71,25 @@ swell/
 ├── server/
 │   ├── api/
 │   │   ├── japanese-news-client.ts  ← 日本語ニュースRSS取得・感情分析
-│   │   ├── video-client.ts          ← YouTube Data API v3（トレンド動画）
-│   │   ├── market-client-v2.ts      ← マーケットデータ取得
+│   │   ├── buzz-client.ts           ← SOCIAL実装: はてブ+Togetter RSS (v2)
+│   │   ├── video-client.ts          ← YouTube Data API v3 (v2でSOCIAL切離し・dead code)
+│   │   ├── market-client-v2.ts      ← Yahoo Finance マーケット取得 (全6カテゴリ)
 │   │   ├── data-router.ts           ← 各カテゴリのデータ取得統合
-│   │   ├── trpc-data-router.ts      ← tRPCルーター（getByCategory）
+│   │   ├── trpc-data-router.ts      ← tRPCルーター（getByCategory, getSocial, getMarket等）
 │   │   └── cache-service.ts         ← インメモリキャッシュ（TTL付き）
+│   ├── batch/
+│   │   └── generate-static-json.ts  ← 静的JSON生成バッチ (2-5分ごと, `pnpm batch`)
 │   └── _core/
-│       ├── index.ts                 ← Expressサーバーエントリ
+│       ├── index.ts                 ← Expressサーバーエントリ (静的/data/*配信)
 │       ├── trpc.ts                  ← tRPCセットアップ
+│       ├── oauth.ts                 ← OAuth callback (security review対象)
+│       ├── sdk.ts                   ← 認証SDK (JWT_SECRET参照)
 │       └── llm.ts                   ← LLM（使用停止・コスト削減済み）
+│
+├── public/
+│   └── data/                        ← server/batchの生成物: news.json/social.json/market.json/meta.json (gitignore)
+│
+├── scripts/                         ← 手動運用スクリプト
 │
 ├── constants/
 │   └── theme.ts                 ← ランタイムカラーパレット再エクスポート

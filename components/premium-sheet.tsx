@@ -8,9 +8,10 @@ interface PremiumSheetProps {
 }
 
 const FEATURES = [
-  { label: 'NEWSカテゴリ', free: true, premium: true },
-  { label: 'SOCIALカテゴリ', free: false, premium: true },
-  { label: 'MARKETカテゴリ', free: false, premium: true },
+  { label: '3カテゴリ閲覧 (NEWS/SOCIAL/MARKET)', free: true, premium: true },
+  { label: 'NEWS/SOCIAL アイテム数', free: false, premium: true },
+  { label: 'MARKET 全カテゴリ (暗号資産/商品/為替/投信/米国株)', free: false, premium: true },
+  { label: 'MARKET 主要指標 (Nikkei/S&P500/USDJPY)', free: true, premium: true },
   { label: '広告なし', free: false, premium: true },
   { label: '履歴（直近5件）', free: true, premium: false },
   { label: '履歴（無制限）', free: false, premium: true },
