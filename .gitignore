@@ -63,3 +63,12 @@ Thumbs.db
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Claude Code local settings (per-machine)
+.claude/
+
+# npm lockfile — this project uses pnpm exclusively
+package-lock.json
+
+# Generated static JSON from scripts/batch (regenerable)
+public/data/
