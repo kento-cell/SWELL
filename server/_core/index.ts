@@ -30,18 +30,37 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Enable CORS for all routes - reflect the request origin to support credentials
+  // CORS: only reflect the Origin when it belongs to a trusted host.
+  // Reflecting an arbitrary Origin while Allow-Credentials is true lets any
+  // site read authenticated responses, so validate before echoing it back.
+  // Trusted: localhost / 127.0.0.1 (any port) and *.manuspre.computer
+  // sandbox subdomains. Extend ALLOWED_ORIGIN_SUFFIXES for new deploy hosts.
+  const ALLOWED_ORIGIN_SUFFIXES = [".manuspre.computer"];
+  const isAllowedOrigin = (origin: string): boolean => {
+    let host: string;
+    try {
+      host = new URL(origin).hostname;
+    } catch {
+      return false;
+    }
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+      return true;
+    }
+    return ALLOWED_ORIGIN_SUFFIXES.some((suffix) => host.endsWith(suffix));
+  };
+
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin) {
+    if (origin && isAllowedOrigin(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+      res.header("Access-Control-Allow-Credentials", "true");
     }
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization",
     );
-    res.header("Access-Control-Allow-Credentials", "true");
 
     // Handle preflight requests
     if (req.method === "OPTIONS") {
@@ -63,12 +82,21 @@ async function startServer() {
   // Image proxy for YouTube thumbnails (avoids CORS/CSP issues in preview)
   app.get("/api/image-proxy", async (req, res) => {
     const url = req.query.url as string;
-    if (!url || !url.startsWith('https://i.ytimg.com/')) {
+    // Validate the parsed host (not a string prefix) and disable redirect
+    // following so the allowlisted host can't 3xx us into an internal target.
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      res.status(400).json({ error: 'Invalid URL' });
+      return;
+    }
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'i.ytimg.com') {
       res.status(400).json({ error: 'Invalid URL' });
       return;
     }
     try {
-      const response = await fetch(url);
+      const response = await fetch(parsed.toString(), { redirect: 'error' });
       if (!response.ok) { res.status(response.status).end(); return; }
       const contentType = response.headers.get('content-type') || 'image/jpeg';
       res.setHeader('Content-Type', contentType);
